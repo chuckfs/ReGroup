@@ -1,35 +1,29 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
+import { Stack } from 'expo-router';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { palette } from '@/constants';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+/**
+ * Tabs group.
+ *
+ * Today this is just a headerless Stack rendering the single Map tab —
+ * no visible tab bar so the home map keeps its current full-bleed look.
+ *
+ * When we add Friends / Activity / Settings tabs, swap this `Stack` for
+ * an Expo Router `Tabs` layout with the bespoke ReGroup-style tab bar
+ * (glassy pill at the bottom, gradient active indicator).
+ *
+ * Route group `(tabs)` is URL-invisible: `/(tabs)/index` is reachable
+ * as just `/`.
+ */
+export default function TabsLayout() {
   return (
-    <Tabs
+    <Stack
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+        contentStyle: { backgroundColor: palette.voidPurple },
+        animation: 'fade',
+      }}
+    />
   );
 }

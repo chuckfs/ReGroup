@@ -1,24 +1,60 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import React from 'react';
+import { StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import * as SystemUI from 'expo-system-ui';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { palette } from '@/constants';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+SystemUI.setBackgroundColorAsync(palette.voidPurple).catch(() => {});
 
+/**
+ * Root layout. Wraps every route in:
+ *   - SafeAreaProvider — so top-bar / sheet honour insets everywhere
+ *   - GestureHandlerRootView — required by the sheet pan gesture
+ *
+ * The Stack is headerless; each screen sets its own status bar.
+ *
+ * Route groups:
+ *   - `index`     — splash entry (`features/onboarding`)
+ *   - `(tabs)`    — primary tabbed experience (today: just the map)
+ *   - `(modals)`  — modal-presented routes (group creation, friend detail)
+ *
+ * Modal presentation is configured in `app/(modals)/_layout.tsx` so this
+ * root file stays clean as more modals get added.
+ */
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: palette.voidPurple },
+            animation: 'fade',
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="(modals)"
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+              gestureEnabled: true,
+              contentStyle: { backgroundColor: palette.voidPurple },
+            }}
+          />
+        </Stack>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: palette.voidPurple,
+  },
+});
