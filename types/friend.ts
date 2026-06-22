@@ -2,7 +2,7 @@ import type { MarkerHue } from '@/constants';
 import type { MapPosition } from './location';
 
 /**
- * Friend-related types. Kept separate from group/alert types so the
+ * Friend-related types. Kept separate from group types so the
  * friend feature module can import a tight, self-contained surface.
  *
  * When the backend lands, these are the shapes the realtime layer

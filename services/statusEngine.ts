@@ -1,59 +1,32 @@
-import type { Friend, FriendStatus, MapPosition } from '@/types';
+import type { Friend, MapPosition } from '@/types';
 
-import {
-  computeProximityStatus,
-  PROXIMITY_THRESHOLDS_FEET,
-  resolveFriendStatus,
-} from './proximityEngine';
-
-const FEET_PER_MILE = 5_280;
+import { PROXIMITY_THRESHOLDS_FEET } from './proximityEngine';
 
 /**
- * StatusEngine — derives a `FriendStatus` from distance, battery, and
- * "last seen" age. Proximity bands are delegated to `proximityEngine`.
+ * Group-level helpers — battery thresholds and centroid math.
+ * Proximity bands live in `proximityEngine`; awareness transitions
+ * live in `awarenessEngine`.
  *
  * ─── Production swap ────────────────────────────────────────────────
- * TODO(backend): mirror this exact logic on the server (or run it in a
- * realtime worker) so all clients see the same status without
- * recomputing locally.
+ * TODO(backend): mirror threshold logic on the server so all clients
+ * see the same status without recomputing locally.
  *
- * TODO(centroid): derive centroid from live Supabase realtime GPS fixes
- * instead of mock normalised map positions.
- *
- * TODO(drifting): run proximity checks on each realtime location tick to
- * detect drifting and separated states without polling.
+ * TODO(centroid): wire `computeGroupCentroid` into the live path in
+ * Phase 4 when map auto-fit and group-relative distance land. v1 uses
+ * user-relative proximity only (`proximityEngine`).
  */
 const THRESHOLDS = {
-  /** Battery % under which we surface a low-battery alert. */
+  /** Battery % under which we surface a low-battery awareness event. */
   lowBatteryPct: 20,
   /** Minutes without a ping after which we degrade to "separated". */
   staleMinutes: 12,
 } as const;
 
-/** @deprecated Prefer `computeProximityStatus` with feet from `distance.ts`. */
-export function computeFriendStatus(input: {
-  /** Distance from the group centroid, in miles. */
-  distanceMiles: number;
-  /** Minutes since last ping. */
-  minutesSinceLastSeen: number;
-  /** Friend's self-declared status (e.g. "heading_home"). Wins when set. */
-  declared?: FriendStatus;
-}): FriendStatus {
-  const { distanceMiles, minutesSinceLastSeen, declared } = input;
-
-  if (declared === 'heading_home' || declared === 'home_safe') return declared;
-  if (minutesSinceLastSeen >= THRESHOLDS.staleMinutes) return 'separated';
-
-  const distanceFeet = distanceMiles * FEET_PER_MILE;
-  return resolveFriendStatus(computeProximityStatus(distanceFeet), declared);
-}
-
 /**
  * Average of all friend positions — used as the "group centroid" so we
  * can compute per-friend distance without picking an arbitrary anchor.
  *
- * TODO(centroid): derive centroid from live Supabase realtime GPS fixes
- * instead of mock normalised map positions.
+ * Phase 4 — not wired in v1.
  */
 export function computeGroupCentroid(friends: Friend[]): MapPosition {
   if (friends.length === 0) return { x: 0.5, y: 0.5 };
@@ -66,7 +39,7 @@ export function computeGroupCentroid(friends: Friend[]): MapPosition {
   return { x: sx / friends.length, y: sy / friends.length };
 }
 
-/** Quick boolean — should we surface a low-battery alert for this friend? */
+/** Quick boolean — should we surface a low-battery awareness event? */
 export function isLowBattery(friend: Friend): boolean {
   return friend.batteryPercent <= THRESHOLDS.lowBatteryPct;
 }

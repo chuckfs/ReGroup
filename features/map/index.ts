@@ -12,15 +12,12 @@
  *
  * Scaling guidance:
  *   - Real maps: replace `MapPaths` + `MapAtmosphere` with an actual
- *     map renderer (MapLibre/Mapbox). Keep `MapCanvas`'s `(friends,
- *     positions)` API stable.
- *   - Per-friend live positions: already plumbed via the optional
- *     `positions` prop on `MapCanvas`. Pass `useMockLocation(members)`
- *     (or the realtime equivalent) from `HomeScreen` once we're ready
- *     for moving markers.
+ *     map renderer (MapLibre/Mapbox). Keep `MapCanvas`'s stable API:
+ *     `(width, height, friends, positions, userPosition, onFriendPress)`.
+ *   - Per-friend live positions: pass `useLiveFriends` positions from
+ *     `HomeScreen` (or the Supabase realtime equivalent in production).
  *   - Clustering: introduce a `MapClusterLayer` between `MapCanvas`
- *     and the per-friend `FloatingMapPin` so larger groups stay
- *     legible without changing pin code.
+ *     and the per-friend `FloatingMapPin` in Phase 4.
  */
 export { default as HomeScreen } from './screens/HomeScreen';
 export { MapCanvas } from './components/MapCanvas';

@@ -1,4 +1,3 @@
-import { calculateDistanceMeters } from '@/services/distance';
 import type {
   DeviceLocation,
   GeoCoordinate,
@@ -7,6 +6,14 @@ import type {
 
 const EARTH_RADIUS_METERS = 6_371_000;
 
+/**
+ * GPS → stylised map projection.
+ *
+ * TODO(Phase 4): group-centroid-relative projection, adaptive span, and
+ * auto-fit for festival-scale crews.
+ * TODO(Phase 4): cluster nearby pins when groups grow large.
+ * TODO(venue): bias origin or span using venue metadata.
+ */
 export type MapProjectionConfig = {
   /**
    * Meters represented across the full normalized span (0 → 1).
@@ -116,36 +123,6 @@ class MapProjectionImpl {
 
   reset(): void {
     this.origin = null;
-  }
-
-  /**
-   * TODO(realtime): project a friend's Supabase realtime location
-   * relative to the active group centroid instead of the user origin.
-   */
-  projectFriendRelativeToGroup(
-    friendLocation: GeoCoordinate,
-    groupCentroid: GeoCoordinate,
-  ): MapPosition {
-    const distanceMeters = calculateDistanceMeters(groupCentroid, friendLocation);
-    // Placeholder — real implementation will use bearing + distance.
-    void distanceMeters;
-    return offsetMetersToMapPosition(groupCentroid, friendLocation, this.config);
-  }
-
-  /**
-   * TODO(clustering): merge nearby projected positions into a single
-   * cluster marker when friends are within a tight radius.
-   */
-  clusterPositions(_positions: MapPosition[]): MapPosition[] {
-    return _positions;
-  }
-
-  /**
-   * TODO(venue): bias projection origin or span using venue metadata
-   * (concert hall, festival grounds, bar crawl route).
-   */
-  setVenueContext(_venueId: string | null): void {
-    // No-op until venue awareness lands.
   }
 }
 

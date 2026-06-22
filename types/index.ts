@@ -26,13 +26,6 @@ export type {
 } from './group';
 
 export type {
-  Alert,
-  AlertFilter,
-  AlertKind,
-  AlertSeverity,
-} from './alert';
-
-export type {
   AwarenessEvent,
   AwarenessEventType,
 } from './awareness';
