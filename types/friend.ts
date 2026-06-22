@@ -36,8 +36,8 @@ export type Friend = {
   position: MapPosition;
   /** Human-readable place (e.g. "Wythe Ave, Brooklyn"). */
   lastSeenPlace?: string;
-  /** Straight-line distance from the user, in miles (v1; centroid in Phase 4). */
-  distanceFromGroupMiles?: number;
+  /** Straight-line distance from the user, in miles (v1 anchor). Phase 4 may add centroid distance. */
+  distanceFromUserMiles?: number;
   /** What device they're on — used in the detail sheet. */
   device?: string;
 };

@@ -59,7 +59,7 @@ export default function FriendDetailScreen({
   const accent = markerHues[friend.hue];
   const status = STATUS_COPY[friend.status];
   const distanceTone =
-    friend.distanceFromGroupMiles && friend.distanceFromGroupMiles >= 0.5
+    friend.distanceFromUserMiles && friend.distanceFromUserMiles >= 0.5
       ? 'warning'
       : 'default';
 
@@ -111,8 +111,8 @@ export default function FriendDetailScreen({
             <Divider />
             <FriendMetric
               icon="↗"
-              label="From group"
-              value={formatDistance(friend.distanceFromGroupMiles)}
+              label="From you"
+              value={formatDistance(friend.distanceFromUserMiles)}
               tone={distanceTone}
             />
             <Divider />

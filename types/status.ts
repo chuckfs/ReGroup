@@ -6,8 +6,9 @@ import type { QuickAction } from './group';
  * Precedence (highest wins):
  *   coordinationStatus → declaredStatus → proximityStatus
  *
- * Proximity is always computed from distance. Declared comes from quick
- * actions. Coordination comes from regroup responses (Phase 5).
+ * Proximity is always computed from distance (user-relative in v1).
+ * See `docs/proximity-model.md`. Declared comes from quick actions.
+ * Coordination comes from regroup responses (Phase 5).
  */
 
 /** Computed from distance — drives map pins and awareness transitions. */

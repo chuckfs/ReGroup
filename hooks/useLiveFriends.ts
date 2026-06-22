@@ -28,9 +28,11 @@ type UseLiveFriendsResult = {
 };
 
 /**
- * Live friend pipeline:
+ * Live friend pipeline (v1 proximity anchor: **user**):
  *
- *   DeviceLocation → Projection → Distance → ProximityStatus → DisplayStatus
+ *   DeviceLocation → Projection → Distance (user→friend) → ProximityStatus → DisplayStatus
+ *
+ * See `docs/proximity-model.md`. Centroid distance is Phase 4.
  *
  * In __DEV__, `friendSimulator` supplies friend GPS fixes around the
  * user's real location. In production, this hook will subscribe to
@@ -124,7 +126,7 @@ export function useLiveFriends(
         proximityStatus,
         position: projected,
         batteryPercent,
-        distanceFromGroupMiles: distanceFeet / 5280,
+        distanceFromUserMiles: distanceFeet / 5280,
         lastSeenMinutesAgo: 0,
       };
     });

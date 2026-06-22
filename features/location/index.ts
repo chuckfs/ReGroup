@@ -18,6 +18,7 @@ export {
   computeAllFriendProximity,
   computeFriendProximity,
   computeProximityStatus,
+  PROXIMITY_ANCHOR,
   PROXIMITY_THRESHOLDS_FEET,
 } from '@/services/proximityEngine';
 export { friendSimulator } from '@/services/friendSimulator';

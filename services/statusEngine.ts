@@ -3,17 +3,14 @@ import type { Friend, MapPosition } from '@/types';
 import { PROXIMITY_THRESHOLDS_FEET } from './proximityEngine';
 
 /**
- * Group-level helpers — battery thresholds and centroid math.
- * Proximity bands live in `proximityEngine`; awareness transitions
- * live in `awarenessEngine`.
+ * Session-level helpers — battery thresholds and centroid math.
  *
- * ─── Production swap ────────────────────────────────────────────────
- * TODO(backend): mirror threshold logic on the server so all clients
- * see the same status without recomputing locally.
+ * Proximity bands: `proximityEngine` (user-relative in v1).
+ * Awareness transitions: `awarenessEngine`.
  *
- * TODO(centroid): wire `computeGroupCentroid` into the live path in
- * Phase 4 when map auto-fit and group-relative distance land. v1 uses
- * user-relative proximity only (`proximityEngine`).
+ * See `docs/proximity-model.md` for the v1 proximity decision.
+ *
+ * TODO(backend): mirror threshold logic on the server.
  */
 const THRESHOLDS = {
   /** Battery % under which we surface a low-battery awareness event. */
@@ -23,10 +20,12 @@ const THRESHOLDS = {
 } as const;
 
 /**
- * Average of all friend positions — used as the "group centroid" so we
- * can compute per-friend distance without picking an arbitrary anchor.
+ * Average of friend map positions — the group centroid in normalised
+ * map space.
  *
- * Phase 4 — not wired in v1.
+ * **Phase 4 only.** Not called from any live path in v1. When wired,
+ * this will support map auto-fit, group-cohesion summaries, and
+ * optional centroid-relative proximity. See `docs/proximity-model.md`.
  */
 export function computeGroupCentroid(friends: Friend[]): MapPosition {
   if (friends.length === 0) return { x: 0.5, y: 0.5 };

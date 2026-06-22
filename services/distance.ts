@@ -9,8 +9,7 @@ function toRadians(degrees: number): number {
 
 /**
  * Great-circle distance between two GPS points (Haversine).
- * Used by the status engine for proximity thresholds and by map
- * projection for group-relative offsets.
+ * v1 proximity uses user → friend; Phase 4 may add centroid anchors.
  */
 export function calculateDistanceMeters(
   from: GeoCoordinate,

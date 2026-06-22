@@ -3,16 +3,23 @@ import type { DeviceLocation } from '@/types/location';
 import type { ProximityStatus } from '@/types/status';
 
 /**
- * Proximity bands — single source of truth for status thresholds.
- * Distances are straight-line feet from the user (v1) or group
- * centroid (Phase 4).
+ * Proximity engine — distance → status bands.
  *
- * TODO(centroid): compute distance from the live group centroid once
- * Supabase realtime friend positions are wired.
+ * ## v1 model: user-relative
  *
- * TODO(venue): make thresholds adaptive by venue type (festival vs
- * bar crawl vs house party).
+ * All proximity is computed from **the user's GPS fix** to each friend's
+ * fix. See `docs/proximity-model.md` for the locked decision.
+ *
+ * Group-centroid distance is deferred to Phase 4 — do not wire
+ * `computeGroupCentroid` into this path until then.
+ *
+ * TODO(Phase 4): optional centroid anchor + adaptive venue thresholds.
+ * TODO(realtime): Supabase friend positions replace dev simulator input.
  */
+export const PROXIMITY_ANCHOR = 'user' as const;
+
+export type ProximityAnchor = typeof PROXIMITY_ANCHOR | 'centroid';
+
 export const PROXIMITY_THRESHOLDS_FEET = {
   WITH_GROUP: 150,
   NEARBY: 500,
@@ -20,6 +27,7 @@ export const PROXIMITY_THRESHOLDS_FEET = {
 } as const;
 
 export type ProximityResult = {
+  /** Straight-line feet from the proximity anchor (user in v1). */
   distanceFeet: number;
   status: ProximityStatus;
 };
@@ -35,7 +43,8 @@ export function computeProximityStatus(distanceFeet: number): ProximityStatus {
 }
 
 /**
- * Derive a friend's proximity band from user + friend GPS fixes.
+ * Derive a friend's proximity band from the user's fix and the friend's
+ * fix. v1 always anchors on the user — not the group centroid.
  */
 export function computeFriendProximity(
   userLocation: DeviceLocation,
@@ -49,10 +58,7 @@ export function computeFriendProximity(
 }
 
 /**
- * Batch-compute proximity for every friend against the user.
- *
- * TODO(realtime): replace simulated `friendLocations` with Supabase
- * realtime GPS fixes keyed by friend id.
+ * Batch-compute proximity for every friend against the user (v1 anchor).
  */
 export function computeAllFriendProximity(
   userLocation: DeviceLocation,
