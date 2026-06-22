@@ -1,21 +1,33 @@
 /**
- * Location feature module — placeholder.
+ * Location feature module.
  *
- * Today: mock movement is handled entirely by
- * `services/mockLocationEngine.ts`. Components subscribe via
- * `hooks/useMockLocation.ts`.
+ * Foreground device location flows through `locationService` and
+ * `useLocation`. GPS fixes are projected onto the stylized map via
+ * `mapProjection` and `useUserMapPosition`. Friend proximity is derived
+ * in `proximityEngine` and surfaced through `useLiveFriends`.
  *
- * Production swap:
- *   1. Replace `mockLocationEngine` with `services/locationService.ts`
- *      that uses `expo-location`:
- *        - foreground tracking when the app is open
- *        - background tracking via TaskManager when "night mode" is on
- *   2. Pipe each device update into the realtime channel (Supabase
- *      Realtime / WebSocket) keyed by `(groupId, userId)`.
- *   3. The rest of the app keeps consuming positions through
- *      `useMockLocation`, renamed `useFriendPositions`.
- *
- * Privacy notes: we never persist raw GPS history client-side; only the
- * most recent point per friend is held in memory.
+ * Privacy: only the most recent point is held in memory — no GPS history.
  */
-export {} from '@/types';
+export { locationService } from '@/services/locationService';
+export { mapProjection } from '@/services/mapProjection';
+export {
+  calculateDistanceFeet,
+  calculateDistanceMeters,
+} from '@/services/distance';
+export {
+  computeAllFriendProximity,
+  computeFriendProximity,
+  computeProximityStatus,
+  PROXIMITY_THRESHOLDS_FEET,
+  resolveFriendStatus,
+} from '@/services/proximityEngine';
+export { friendSimulator } from '@/services/friendSimulator';
+export { useLocation } from '@/hooks/useLocation';
+export { useUserMapPosition } from '@/hooks/useUserMapPosition';
+export { useLiveFriends } from '@/hooks/useLiveFriends';
+export type { FriendProximityDetail } from '@/hooks/useLiveFriends';
+export type {
+  DeviceLocation,
+  GeoCoordinate,
+  MapPosition,
+} from '@/types/location';

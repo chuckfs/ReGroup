@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
@@ -9,14 +9,19 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { palette, spacing } from '@/constants';
-import { useMockLocation } from '@/hooks/useMockLocation';
+import { useAwarenessLoop } from '@/hooks/useAwarenessLoop';
+import { useLiveFriends } from '@/hooks/useLiveFriends';
+import { useUserMapPosition } from '@/hooks/useUserMapPosition';
 import { useFriendStore } from '@/store/useFriendStore';
 import { useGroupStore } from '@/store/useGroupStore';
 import { useUIStore } from '@/store/useUIStore';
 import type { Friend, QuickAction } from '@/types';
 
 import { GroupSheet, SNAP, type SnapKey } from '@/features/group/components/GroupSheet';
+import { AwarenessBanner, AwarenessDevPanel } from '@/features/awareness';
 
+import { LocationDebugCard } from '../components/LocationDebugCard';
+import { ProximityDebugPanel } from '../components/ProximityDebugPanel';
 import { LocateFab } from '../components/LocateFab';
 import { MapCanvas } from '../components/MapCanvas';
 import { TopBar } from '../components/TopBar';
@@ -45,15 +50,26 @@ export default function HomeScreen() {
   const setSheetSnap = useUIStore((s) => s.setSheetSnap);
 
   const fabOpacity = useSharedValue(1);
+  const [devRefreshKey, setDevRefreshKey] = useState(0);
 
   const mapWidth = SCREEN_WIDTH;
   const mapHeight = SCREEN_HEIGHT;
 
-  // Live position overrides for the friends pins. Today this is a quiet
-  // pass-through (no synthesised drift) — pins only move when their
-  // entry actually changes. Real GPS / realtime updates will flow
-  // through this same map when wired.
-  const positions = useMockLocation(group.members);
+  const { location, mapPosition, error } = useUserMapPosition();
+  const {
+    friends: liveFriends,
+    positions,
+    proximityDetails,
+    friendLocations,
+  } = useLiveFriends(group.members, location, devRefreshKey);
+
+  useAwarenessLoop(liveFriends, friendLocations);
+
+  const liveGroup = { ...group, members: liveFriends };
+
+  const handleDevRefresh = useCallback(() => {
+    setDevRefreshKey((value) => value + 1);
+  }, []);
 
   const handleAction = useCallback((action: QuickAction) => {
     // TODO(backend): post the user's quick-action status to the realtime
@@ -93,8 +109,9 @@ export default function HomeScreen() {
       <MapCanvas
         width={mapWidth}
         height={mapHeight}
-        friends={group.members}
+        friends={liveFriends}
         positions={positions}
+        userPosition={mapPosition}
         onFriendPress={handleFriendPress}
       />
 
@@ -106,6 +123,16 @@ export default function HomeScreen() {
         onSwitchGroup={() => router.push('/group/new' as never)}
       />
 
+      <AwarenessBanner />
+
+      {__DEV__ ? (
+        <>
+          <LocationDebugCard location={location} error={error} />
+          <ProximityDebugPanel details={proximityDetails} />
+          <AwarenessDevPanel onRefresh={handleDevRefresh} />
+        </>
+      ) : null}
+
       <Animated.View
         pointerEvents={snap === 'full' ? 'none' : 'box-none'}
         style={[styles.fabSlot, { bottom: fabBottom }, fabStyle]}
@@ -114,7 +141,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       <GroupSheet
-        group={group}
+        group={liveGroup}
         initialSnap="mid"
         onAction={handleAction}
         onSnapChange={handleSnap}

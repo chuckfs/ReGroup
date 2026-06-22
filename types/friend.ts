@@ -1,4 +1,5 @@
 import type { MarkerHue } from '@/constants';
+import type { MapPosition } from './location';
 
 /**
  * Friend-related types. Kept separate from group/alert types so the
@@ -18,12 +19,6 @@ export type FriendStatus =
   | 'home_safe';
 
 export type StatusTone = 'positive' | 'neutral' | 'warning' | 'danger';
-
-/** Normalised position on the stylised map (0..1 in both axes). */
-export type MapPosition = {
-  x: number;
-  y: number;
-};
 
 export type Friend = {
   id: string;
@@ -50,8 +45,9 @@ export type CurrentUser = {
   batteryPercent: number;
   status: FriendStatus;
   /**
-   * The user's own position in normalised map space (0..1). Optional for
-   * back-compat; when absent the map treats them as anchored at (0.5, 0.5).
+   * The user's own position in normalised map space (0..1). Driven by
+   * the GPS pipeline via `useUserMapPosition`; when absent the map
+   * treats them as anchored at (0.5, 0.5).
    *
    * The map renders the user *visually* at screen centre regardless and
    * uses this value as the "camera origin" — friends are drawn relative

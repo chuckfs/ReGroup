@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { FloatingMapPin, UserMarker } from '@/components/map';
+import { relativeToUser } from '@/services/mapProjection';
 import type { Friend, MapPosition } from '@/types';
 
 import { MapAtmosphere } from './MapAtmosphere';
@@ -18,6 +19,12 @@ type Props = {
    * Pins only move when entries here change.
    */
   positions?: Record<string, MapPosition>;
+  /**
+   * The user's projected map position from GPS. Friends are drawn
+   * relative to this anchor so the user marker stays at screen centre
+   * while the crew shifts around them.
+   */
+  userPosition?: MapPosition;
   onFriendPress?: (friend: Friend) => void;
 };
 
@@ -31,8 +38,9 @@ type Props = {
  *   4. The user marker, locked to the optical centre of the screen
  *
  * Two intentional invariants:
- *   - The user marker never moves. It's glued to the canvas centre
- *     regardless of sheet state, so the rest of the world feels stable.
+ *   - The user marker never moves on screen. It's glued to the canvas
+ *     centre; GPS updates shift friend pins relative to the user via
+ *     `relativeToUser` so the world moves around them.
  *   - Friend pins are at their data-layer positions and only re-render
  *     when their entry in `positions` actually changes. Nothing else
  *     (sheet drag, ambient breathing, etc.) shifts where they sit on
@@ -43,6 +51,7 @@ export function MapCanvas({
   height,
   friends,
   positions,
+  userPosition = { x: 0.5, y: 0.5 },
   onFriendPress,
 }: Props) {
   const insetX = width * 0.08;
@@ -58,8 +67,9 @@ export function MapCanvas({
 
       {friends.map((friend, i) => {
         const pos = positions?.[friend.id] ?? friend.position;
-        const left = insetX + pos.x * (width - insetX * 2);
-        const top = insetY + pos.y * (height - insetY * 2);
+        const relativePos = relativeToUser(pos, userPosition);
+        const left = insetX + relativePos.x * (width - insetX * 2);
+        const top = insetY + relativePos.y * (height - insetY * 2);
         return (
           <View
             key={friend.id}

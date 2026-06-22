@@ -1,34 +1,36 @@
 import type { Friend, FriendStatus, MapPosition } from '@/types';
 
+import {
+  computeProximityStatus,
+  PROXIMITY_THRESHOLDS_FEET,
+  resolveFriendStatus,
+} from './proximityEngine';
+
+const FEET_PER_MILE = 5_280;
+
 /**
- * StatusEngine — derives a `FriendStatus` from a friend's distance to
- * the group centroid, battery, and "last seen" age. Kept pure so it can
- * run on either the device (today, against mock data) or the server
- * (later, as part of the realtime backend).
+ * StatusEngine — derives a `FriendStatus` from distance, battery, and
+ * "last seen" age. Proximity bands are delegated to `proximityEngine`.
  *
  * ─── Production swap ────────────────────────────────────────────────
  * TODO(backend): mirror this exact logic on the server (or run it in a
  * realtime worker) so all clients see the same status without
- * recomputing locally. The thresholds below are tuned for a small urban
- * group; they likely become per-vibe / per-group-config later.
+ * recomputing locally.
  *
- * Thresholds are intentionally generous — a true "Separated" status
- * should be a notable, alarming event, not a passing miscount.
+ * TODO(centroid): derive centroid from live Supabase realtime GPS fixes
+ * instead of mock normalised map positions.
+ *
+ * TODO(drifting): run proximity checks on each realtime location tick to
+ * detect drifting and separated states without polling.
  */
-
 const THRESHOLDS = {
-  /** Miles. Anything <= this is "with the group". */
-  withGroupMiles: 0.06,
-  /** Miles. Up to this you're "nearby" — within walking earshot. */
-  nearbyMiles: 0.25,
-  /** Miles. Up to this you're "drifting" — somewhere on the same block. */
-  driftingMiles: 0.75,
   /** Battery % under which we surface a low-battery alert. */
   lowBatteryPct: 20,
   /** Minutes without a ping after which we degrade to "separated". */
   staleMinutes: 12,
 } as const;
 
+/** @deprecated Prefer `computeProximityStatus` with feet from `distance.ts`. */
 export function computeFriendStatus(input: {
   /** Distance from the group centroid, in miles. */
   distanceMiles: number;
@@ -39,20 +41,19 @@ export function computeFriendStatus(input: {
 }): FriendStatus {
   const { distanceMiles, minutesSinceLastSeen, declared } = input;
 
-  // A user's own declaration ("Heading Home", "Home Safe") always wins.
   if (declared === 'heading_home' || declared === 'home_safe') return declared;
-
   if (minutesSinceLastSeen >= THRESHOLDS.staleMinutes) return 'separated';
 
-  if (distanceMiles <= THRESHOLDS.withGroupMiles) return 'with_group';
-  if (distanceMiles <= THRESHOLDS.nearbyMiles) return 'nearby';
-  if (distanceMiles <= THRESHOLDS.driftingMiles) return 'drifting';
-  return 'separated';
+  const distanceFeet = distanceMiles * FEET_PER_MILE;
+  return resolveFriendStatus(computeProximityStatus(distanceFeet), declared);
 }
 
 /**
  * Average of all friend positions — used as the "group centroid" so we
  * can compute per-friend distance without picking an arbitrary anchor.
+ *
+ * TODO(centroid): derive centroid from live Supabase realtime GPS fixes
+ * instead of mock normalised map positions.
  */
 export function computeGroupCentroid(friends: Friend[]): MapPosition {
   if (friends.length === 0) return { x: 0.5, y: 0.5 };
@@ -70,4 +71,7 @@ export function isLowBattery(friend: Friend): boolean {
   return friend.batteryPercent <= THRESHOLDS.lowBatteryPct;
 }
 
-export const STATUS_THRESHOLDS = THRESHOLDS;
+export const STATUS_THRESHOLDS = {
+  ...THRESHOLDS,
+  proximityFeet: PROXIMITY_THRESHOLDS_FEET,
+};

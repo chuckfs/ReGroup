@@ -8,9 +8,14 @@ export type {
   CurrentUser,
   Friend,
   FriendStatus,
-  MapPosition,
   StatusTone,
 } from './friend';
+
+export type {
+  DeviceLocation,
+  GeoCoordinate,
+  MapPosition,
+} from './location';
 
 export type {
   DraftGroup,
@@ -26,3 +31,8 @@ export type {
   AlertKind,
   AlertSeverity,
 } from './alert';
+
+export type {
+  AwarenessEvent,
+  AwarenessEventType,
+} from './awareness';
