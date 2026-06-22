@@ -1,6 +1,11 @@
 import type { AwarenessEvent, AwarenessEventType } from '@/types/awareness';
-import type { Friend, FriendStatus } from '@/types';
+import type { Friend } from '@/types';
 import type { DeviceLocation } from '@/types/location';
+import {
+  effectiveProximity,
+  isProximityStatus,
+  type ProximityStatus,
+} from '@/types/status';
 
 import { STATUS_THRESHOLDS } from './statusEngine';
 
@@ -15,24 +20,17 @@ export const AWARENESS_THRESHOLDS = {
   staleLocationMs: __DEV__ ? 15_000 : STATUS_THRESHOLDS.staleMinutes * 60_000,
 } as const;
 
-const PROXIMITY_STATUSES = new Set<FriendStatus>([
-  'with_group',
-  'nearby',
-  'drifting',
-  'separated',
-]);
-
 type FriendSnapshot = {
   friendId: string;
   friendName: string;
-  status: FriendStatus;
+  proximityStatus: ProximityStatus;
   batteryPercent: number;
   locationTimestamp: number | null;
   now: number;
 };
 
 type FriendAwarenessState = {
-  proximity: FriendStatus;
+  proximity: ProximityStatus;
   batteryLow: boolean;
   locationStale: boolean;
 };
@@ -51,15 +49,11 @@ const PROXIMITY_TRANSITIONS: Record<TransitionKey, AwarenessEventType> = {
 };
 
 function transitionKey(
-  from: FriendStatus,
-  to: FriendStatus,
+  from: ProximityStatus,
+  to: ProximityStatus,
 ): TransitionKey | null {
   const key = `${from}->${to}` as TransitionKey;
   return key in PROXIMITY_TRANSITIONS ? key : null;
-}
-
-function isProximityStatus(status: FriendStatus): boolean {
-  return PROXIMITY_STATUSES.has(status);
 }
 
 function buildMessage(
@@ -101,7 +95,7 @@ function snapshotState(input: FriendSnapshot): FriendAwarenessState {
     input.now - input.locationTimestamp >= AWARENESS_THRESHOLDS.staleLocationMs;
 
   return {
-    proximity: isProximityStatus(input.status) ? input.status : 'nearby',
+    proximity: input.proximityStatus,
     batteryLow: input.batteryPercent <= AWARENESS_THRESHOLDS.criticalBatteryPct,
     locationStale,
   };
@@ -110,6 +104,9 @@ function snapshotState(input: FriendSnapshot): FriendAwarenessState {
 /**
  * Pure transition detector — emits awareness events only when a friend's
  * proximity, battery, or freshness state changes.
+ *
+ * Tracks proximity bands only — declared/coordination statuses do not
+ * suppress proximity transition detection.
  *
  * TODO(realtime): feed snapshots from Supabase realtime friend positions
  * instead of the dev simulator.
@@ -135,7 +132,7 @@ export class AwarenessEngineTracker {
       const snapshot: FriendSnapshot = {
         friendId: friend.id,
         friendName: friend.name,
-        status: friend.status,
+        proximityStatus: effectiveProximity(friend),
         batteryPercent: friend.batteryPercent,
         locationTimestamp: location?.timestamp ?? null,
         now,
@@ -149,11 +146,7 @@ export class AwarenessEngineTracker {
         continue;
       }
 
-      if (
-        isProximityStatus(prior.proximity) &&
-        isProximityStatus(current.proximity) &&
-        prior.proximity !== current.proximity
-      ) {
+      if (prior.proximity !== current.proximity) {
         const key = transitionKey(prior.proximity, current.proximity);
         if (key) {
           const type = PROXIMITY_TRANSITIONS[key];

@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { palette } from '@/constants';
 import { STATUS_COPY } from '@/services/mockData';
-import type { FriendStatus, StatusTone } from '@/types';
+import type { DisplayStatus, StatusTone } from '@/types';
 
 const toneToColor: Record<StatusTone, string> = {
   positive: palette.mint,
@@ -13,7 +13,7 @@ const toneToColor: Record<StatusTone, string> = {
 };
 
 type Props = {
-  status: FriendStatus;
+  status: DisplayStatus;
   size?: number;
 };
 

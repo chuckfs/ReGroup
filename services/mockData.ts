@@ -1,4 +1,5 @@
-import type { Friend, FriendStatus, Group, StatusTone } from '@/types';
+import type { Friend, Group, StatusTone } from '@/types';
+import { effectiveProximity, type DisplayStatus } from '@/types/status';
 
 /**
  * Ground-truth mock data + small helpers that operate on it. The whole
@@ -106,17 +107,22 @@ export const mockGroup: Group = {
   ],
 };
 
-/** Human-readable label + accent colour key for a friend's status. */
+/** Human-readable label + accent colour key for a merged display status. */
 export const STATUS_COPY: Record<
-  FriendStatus,
+  DisplayStatus,
   { label: string; tone: StatusTone }
 > = {
   with_group: { label: 'With Group', tone: 'positive' },
   nearby: { label: 'Nearby', tone: 'neutral' },
   drifting: { label: 'Drifting', tone: 'warning' },
   separated: { label: 'Separated', tone: 'danger' },
+  im_good: { label: "I'm Good", tone: 'positive' },
   heading_home: { label: 'Heading Home', tone: 'neutral' },
   home_safe: { label: 'Home Safe', tone: 'positive' },
+  at_meeting_point: { label: 'At Meeting Point', tone: 'positive' },
+  heading_to_point: { label: 'Heading There', tone: 'neutral' },
+  cant_make_it: { label: "Can't Make It", tone: 'warning' },
+  no_response: { label: 'No Response', tone: 'danger' },
 };
 
 export function summarizeGroup(group: Group): {
@@ -126,10 +132,12 @@ export function summarizeGroup(group: Group): {
 } {
   const total = group.members.length + 1;
   const withGroup =
-    group.members.filter((f: Friend) => f.status === 'with_group').length + 1;
-  const drifting = group.members.filter(
-    (f: Friend) => f.status === 'drifting' || f.status === 'separated',
-  ).length;
+    group.members.filter((f: Friend) => effectiveProximity(f) === 'with_group')
+      .length + 1;
+  const drifting = group.members.filter((f: Friend) => {
+    const proximity = effectiveProximity(f);
+    return proximity === 'drifting' || proximity === 'separated';
+  }).length;
   return { withGroup, drifting, total };
 }
 

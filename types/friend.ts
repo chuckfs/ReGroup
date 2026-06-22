@@ -1,5 +1,11 @@
 import type { MarkerHue } from '@/constants';
 import type { MapPosition } from './location';
+import type {
+  CoordinationStatus,
+  DeclaredStatus,
+  DisplayStatus,
+  ProximityStatus,
+} from './status';
 
 /**
  * Friend-related types. Kept separate from group types so the
@@ -9,15 +15,6 @@ import type { MapPosition } from './location';
  * (Supabase / WebSocket) must produce per friend update.
  */
 
-/** Where the friend is relative to the group. Drives marker colour + copy. */
-export type FriendStatus =
-  | 'with_group'
-  | 'nearby'
-  | 'drifting'
-  | 'separated'
-  | 'heading_home'
-  | 'home_safe';
-
 export type StatusTone = 'positive' | 'neutral' | 'warning' | 'danger';
 
 export type Friend = {
@@ -25,14 +22,21 @@ export type Friend = {
   name: string;
   initials: string;
   hue: MarkerHue;
-  status: FriendStatus;
+  /** Merged status for UI — see mergeDisplayStatus in types/status.ts */
+  status: DisplayStatus;
+  /** Computed from distance; set by useLiveFriends when GPS is live. */
+  proximityStatus?: ProximityStatus;
+  /** User-declared via quick action or backend sync. */
+  declaredStatus?: DeclaredStatus;
+  /** Response to a regroup rally (Phase 5). */
+  coordinationStatus?: CoordinationStatus;
   batteryPercent: number;
   /** Minutes since last seen by the group. */
   lastSeenMinutesAgo: number;
   position: MapPosition;
   /** Human-readable place (e.g. "Wythe Ave, Brooklyn"). */
   lastSeenPlace?: string;
-  /** Straight-line distance from the group's centroid, in miles. */
+  /** Straight-line distance from the user, in miles (v1; centroid in Phase 4). */
   distanceFromGroupMiles?: number;
   /** What device they're on — used in the detail sheet. */
   device?: string;
@@ -43,7 +47,8 @@ export type CurrentUser = {
   name: string;
   initials: string;
   batteryPercent: number;
-  status: FriendStatus;
+  status: DisplayStatus;
+  declaredStatus?: DeclaredStatus;
   /**
    * The user's own position in normalised map space (0..1). Driven by
    * the GPS pipeline via `useUserMapPosition`; when absent the map

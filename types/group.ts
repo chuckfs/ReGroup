@@ -46,5 +46,10 @@ export type DraftGroup = {
 /**
  * Quick actions on the bottom sheet. Adding a new one here flows through
  * to the QuickActions component and the on-press handler in HomeScreen.
+ *
+ * Maps to DeclaredStatus via quickActionToDeclaredStatus():
+ *   im_good       → 'im_good'
+ *   heading_home  → 'heading_home'
+ *   end_night     → 'home_safe'
  */
 export type QuickAction = 'im_good' | 'heading_home' | 'end_night';

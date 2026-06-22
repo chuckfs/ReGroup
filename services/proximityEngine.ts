@@ -1,11 +1,11 @@
 import { calculateDistanceFeet } from '@/services/distance';
 import type { DeviceLocation } from '@/types/location';
-import type { FriendStatus } from '@/types';
+import type { ProximityStatus } from '@/types/status';
 
 /**
  * Proximity bands — single source of truth for status thresholds.
- * Distances are straight-line feet from the user (today) or group
- * centroid (later).
+ * Distances are straight-line feet from the user (v1) or group
+ * centroid (Phase 4).
  *
  * TODO(centroid): compute distance from the live group centroid once
  * Supabase realtime friend positions are wired.
@@ -19,17 +19,15 @@ export const PROXIMITY_THRESHOLDS_FEET = {
   DRIFTING: 1_000,
 } as const;
 
-export type ProximityBand = 'with_group' | 'nearby' | 'drifting' | 'separated';
-
 export type ProximityResult = {
   distanceFeet: number;
-  status: ProximityBand;
+  status: ProximityStatus;
 };
 
 /**
  * Map a straight-line distance (feet) to a proximity band.
  */
-export function computeProximityStatus(distanceFeet: number): ProximityBand {
+export function computeProximityStatus(distanceFeet: number): ProximityStatus {
   if (distanceFeet < PROXIMITY_THRESHOLDS_FEET.WITH_GROUP) return 'with_group';
   if (distanceFeet < PROXIMITY_THRESHOLDS_FEET.NEARBY) return 'nearby';
   if (distanceFeet < PROXIMITY_THRESHOLDS_FEET.DRIFTING) return 'drifting';
@@ -67,15 +65,4 @@ export function computeAllFriendProximity(
   }
 
   return results;
-}
-
-/**
- * Self-declared statuses (e.g. "Heading Home") override proximity bands.
- */
-export function resolveFriendStatus(
-  proximity: ProximityBand,
-  declared?: FriendStatus,
-): FriendStatus {
-  if (declared === 'heading_home' || declared === 'home_safe') return declared;
-  return proximity;
 }

@@ -28,7 +28,7 @@ export function ProximityDebugPanel({ details }: Props) {
             {formatDistanceFeet(detail.distanceFeet)}
           </Text>
           <Text style={styles.status}>
-            {STATUS_COPY[detail.status].label}
+            {STATUS_COPY[detail.proximityStatus].label}
           </Text>
         </View>
       ))}

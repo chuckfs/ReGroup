@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { palette, radius, typography } from '@/constants';
 import { STATUS_COPY } from '@/services/mockData';
-import type { FriendStatus, StatusTone } from '@/types';
+import type { DisplayStatus, StatusTone } from '@/types';
 
 import { StatusDot } from './StatusDot';
 
@@ -22,7 +22,7 @@ const toneToBackground: Record<StatusTone, string> = {
 };
 
 type Props = {
-  status: FriendStatus;
+  status: DisplayStatus;
   /** "pill" puts the status inside a tinted capsule; "inline" is text only. */
   variant?: 'pill' | 'inline';
   /** Show a leading status dot. Defaults to true. */
@@ -30,7 +30,7 @@ type Props = {
 };
 
 /**
- * Status presentation primitive — converts a `FriendStatus` into the
+ * Status presentation primitive — converts a `DisplayStatus` into the
  * canonical {colour, dot, label} chip used across the friend list, the
  * hero card, and the alerts feed.
  *

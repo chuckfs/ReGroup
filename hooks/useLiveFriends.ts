@@ -3,18 +3,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { awarenessDevSimulator } from '@/services/awarenessDevSimulator';
 import { friendSimulator } from '@/services/friendSimulator';
 import { mapProjection } from '@/services/mapProjection';
-import {
-  computeFriendProximity,
-  resolveFriendStatus,
-} from '@/services/proximityEngine';
+import { computeFriendProximity } from '@/services/proximityEngine';
 import type { DeviceLocation, MapPosition } from '@/types/location';
-import type { Friend, FriendStatus } from '@/types';
+import type { Friend } from '@/types';
+import {
+  mergeDisplayStatus,
+  type DisplayStatus,
+  type ProximityStatus,
+} from '@/types/status';
 
 export type FriendProximityDetail = {
   id: string;
   name: string;
   distanceFeet: number;
-  status: FriendStatus;
+  status: DisplayStatus;
+  proximityStatus: ProximityStatus;
 };
 
 type UseLiveFriendsResult = {
@@ -27,7 +30,7 @@ type UseLiveFriendsResult = {
 /**
  * Live friend pipeline:
  *
- *   DeviceLocation → Projection → Distance → Status
+ *   DeviceLocation → Projection → Distance → ProximityStatus → DisplayStatus
  *
  * In __DEV__, `friendSimulator` supplies friend GPS fixes around the
  * user's real location. In production, this hook will subscribe to
@@ -96,7 +99,11 @@ export function useLiveFriends(
         userLocation,
         deviceLocation,
       );
-      const status = resolveFriendStatus(proximityStatus);
+      const status = mergeDisplayStatus(
+        proximityStatus,
+        friend.declaredStatus,
+        friend.coordinationStatus,
+      );
       const batteryPercent = awarenessDevSimulator.getBatteryPercent(
         friend.id,
         friend.batteryPercent,
@@ -108,11 +115,13 @@ export function useLiveFriends(
         name: friend.name,
         distanceFeet,
         status,
+        proximityStatus,
       });
 
       return {
         ...friend,
         status,
+        proximityStatus,
         position: projected,
         batteryPercent,
         distanceFromGroupMiles: distanceFeet / 5280,
