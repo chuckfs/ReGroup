@@ -29,7 +29,7 @@
 
 ---
 
-## Phase 1 — Backend decision spike  · **S** · *throwaway code*
+## Phase 1 — Backend decision spike  · **S** · *throwaway code* · **✅ Complete**
 
 **Goal:** Choose the realtime/auth/data stack with a 1–2 day proof, not a comparison doc. You asked to evaluate first — this is that, time-boxed so it doesn't become analysis paralysis.
 
@@ -42,11 +42,11 @@
 - Cost behavior at festival scale (many concurrent sessions, congested networks).
 
 **Tasks:**
-- Build a throwaway spike: two devices, one channel, broadcast a live value (a counter, then a coordinate). Measure latency and setup friction.
-- Spike the top candidate first — **Supabase** (Realtime + Postgres + Auth) is the recommended default because every `TODO(backend)` in the code already assumes it and Postgres cleanly models sessions/memberships. Spike a fallback only if time allows — **Firebase** (RTDB/Firestore + Auth) is the main alternative; a custom WebSocket gateway only if you ever outgrow both.
-- Fill a one-page decision matrix, pick one, write the rationale.
+- [x] Throwaway spike (`DevSpikes/regroup-realtime-spike`): counter → GPS → teardown on Supabase Realtime Broadcast
+- [x] Two real devices exchange live values; latency observed in low hundreds of ms
+- [x] Decision matrix + rationale: `docs/backend-decision.md`
 
-**Exit criteria:** Stack chosen; a spike repo proves two real devices exchange a live value; a short written rationale exists.
+**Exit criteria:** Stack chosen; spike proves two real devices exchange a live value; short written rationale exists. **Met — Supabase.**
 
 > Phases 0 and 1 are both small and independent — fine to do in the same couple of weekends, in either order.
 
@@ -141,7 +141,7 @@
 
 ## Where to start next
 
-**Phase 1** — backend decision spike. Phase 0 is complete (see checkmarks above). Run a 1–2 day Supabase realtime proof: two devices, one channel, live coordinate exchange. Don't touch Phases 4–5 until two phones can see each other (Phase 3).
+**Phase 2** — auth & session lifecycle. Phases 0–1 are complete. Stand up Supabase in the production app: `users`, `sessions`, `memberships`, server-enforced `endSession`. Don't touch Phases 4–5 until two phones can see each other (Phase 3).
 
 ---
 
@@ -150,7 +150,7 @@
 | Phase | Focus | Size | Multiplayer? |
 |---|---|---|---|
 | 0 | Cleanup + contract | S | no | **✅ done** |
-| 1 | Backend spike | S | no |
+| 1 | Backend spike | S | no | **✅ done** |
 | 2 | Auth + session lifecycle | M | partial |
 | 3 | Join flow | M | **yes — first milestone** |
 | 4 | Live location sharing | L | yes |

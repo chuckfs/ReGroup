@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { awarenessDevSimulator } from '@/services/awarenessDevSimulator';
+import { useGroupStore } from '@/store/useGroupStore';
 import { friendSimulator } from '@/services/friendSimulator';
 import { mapProjection } from '@/services/mapProjection';
 import { computeFriendProximity } from '@/services/proximityEngine';
@@ -67,15 +67,20 @@ export function useLiveFriends(
       unsubscribe();
       friendSimulator.stop();
     };
-  }, [baseFriends, hasUserFix]);
+  }, [baseFriends, hasActiveSession, hasUserFix]);
 
   useEffect(() => {
-    if (!__DEV__ || !userLocation) return;
+    if (!__DEV__ || !userLocation || hasActiveSession) return;
     friendSimulator.setUserLocation(userLocation);
-  }, [userLocation]);
+  }, [userLocation, hasActiveSession]);
 
   return useMemo(() => {
-    if (!userLocation || !__DEV__ || Object.keys(friendLocations).length === 0) {
+    if (
+      !userLocation ||
+      !__DEV__ ||
+      hasActiveSession ||
+      Object.keys(friendLocations).length === 0
+    ) {
       return {
         friends: baseFriends,
         positions: Object.fromEntries(
@@ -137,5 +142,5 @@ export function useLiveFriends(
       proximityDetails,
       friendLocations,
     };
-  }, [baseFriends, userLocation, friendLocations, devRefreshKey]);
+  }, [baseFriends, userLocation, friendLocations, devRefreshKey, hasActiveSession]);
 }

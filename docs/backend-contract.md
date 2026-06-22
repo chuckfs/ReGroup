@@ -2,7 +2,7 @@
 
 *Phase 0 spec. The TypeScript types in `types/` are the source of truth; this document is the backend implementer's guide.*
 
-Related: `docs/proximity-model.md`, `AGENTS.md`, `ReGroup-Roadmap.md`
+Related: `docs/proximity-model.md`, `docs/backend-decision.md`, `AGENTS.md`, `ReGroup-Roadmap.md`
 
 ---
 

@@ -22,13 +22,13 @@ export default function CreateGroupRoute() {
   }, []);
 
   const handleComplete = useCallback(
-    (group: DraftGroup) => {
-      // TODO(backend): replace with a server mutation that returns the
-      // canonical group object (with server-assigned id, member roster,
-      // initial vibe-specific config). For now we update the local store.
-      createGroup(group);
-      console.log('[ReGroup] new group:', group);
-      handleClose();
+    async (group: DraftGroup) => {
+      try {
+        await createGroup(group);
+        handleClose();
+      } catch (error) {
+        console.error('[ReGroup] create session failed:', error);
+      }
     },
     [createGroup, handleClose],
   );

@@ -1,59 +1,135 @@
 import { create } from 'zustand';
 
+import { isRealSessionId, clearActiveSessionId, persistActiveSessionId, readActiveSessionId } from '@/lib/sessionStorage';
+import { getUserId } from '@/services/authService';
 import { mockGroup } from '@/services/mockData';
+import {
+  createSession,
+  endSession as endSessionOnServer,
+  getSession,
+  leaveSessionChannel,
+  onSessionEnded,
+} from '@/services/sessionService';
 import type { DraftGroup, Group, GroupVibeKey } from '@/types';
 
-/**
- * The "active group" the user is currently looking at. Today we boot
- * from the mock group; once auth + backend land this store becomes the
- * canonical client cache for the user's groups.
- *
- * ─── Production swap ────────────────────────────────────────────────
- * See `docs/backend-contract.md` for the full backend spec.
- * TODO(backend):
- *   - Replace the `setActive(mockGroup)` boot path with a
- *     `loadActiveGroup(groupId)` thunk that hits Supabase and
- *     subscribes to the realtime channel.
- *   - Move `createGroup` to issue a server mutation, then `setActive`
- *     the returned canonical group (with server-assigned id).
- *   - Add `groups: Record<id, Group>` for the multi-group switcher.
- */
-
-type GroupStore = {
-  /** The group the home map is currently rendering. */
-  active: Group;
-  setActive: (group: Group) => void;
-  /** Update only the vibe (cheap UI affordance — wizard restyle). */
-  setVibeKey: (key: GroupVibeKey) => void;
-  /** Persist a new group built by the wizard. Local-only until Phase 2 — does not hit the server. */
-  createGroup: (draft: DraftGroup) => void;
+const idleGroup: Group = {
+  id: 'idle',
+  name: 'ReGroup',
+  vibe: 'Start a night',
+  members: [],
+  user: {
+    id: 'pending',
+    name: 'You',
+    initials: 'YOU',
+    batteryPercent: 100,
+    status: 'with_group',
+  },
 };
 
-export const useGroupStore = create<GroupStore>((set) => ({
-  active: mockGroup,
+function getIdleGroup(): Group {
+  return __DEV__ ? mockGroup : idleGroup;
+}
 
-  setActive: (group) => set({ active: group }),
+async function hydrateIdleUser(group: Group): Promise<Group> {
+  try {
+    const userId = await getUserId();
+    return {
+      ...group,
+      user: { ...group.user, id: userId },
+    };
+  } catch {
+    return group;
+  }
+}
+
+type GroupStore = {
+  active: Group;
+  hasActiveSession: boolean;
+  isBootstrapped: boolean;
+  setActive: (group: Group) => void;
+  setVibeKey: (key: GroupVibeKey) => void;
+  createGroup: (draft: DraftGroup) => Promise<void>;
+  restoreActiveSession: () => Promise<void>;
+  endSession: () => Promise<void>;
+  handleRemoteSessionEnded: () => Promise<void>;
+};
+
+export const useGroupStore = create<GroupStore>((set, get) => ({
+  active: getIdleGroup(),
+  hasActiveSession: false,
+  isBootstrapped: false,
+
+  setActive: (group) =>
+    set({
+      active: group,
+      hasActiveSession: isRealSessionId(group.id),
+    }),
 
   setVibeKey: (key) =>
-    set((s) => ({
-      active: { ...s.active, vibeKey: key },
+    set((state) => ({
+      active: { ...state.active, vibeKey: key },
     })),
 
-  createGroup: (draft) =>
-    set((s) => ({
-      active: {
-        ...s.active,
-        // Phase 2: replace with createSession mutation → server Group object.
-        // Today: retint mock roster with wizard name/vibe/code only.
-        id: `grp_${Date.now().toString(36)}`,
-        name: draft.name,
-        vibeKey: draft.vibeKey,
-        inviteCode: draft.inviteCode,
-      },
-    })),
+  createGroup: async (draft) => {
+    const group = await createSession({
+      name: draft.name,
+      vibeKey: draft.vibeKey,
+    });
+
+    await persistActiveSessionId(group.id);
+    set({ active: group, hasActiveSession: true });
+  },
+
+  restoreActiveSession: async () => {
+    const sessionId = await readActiveSessionId();
+
+    if (!sessionId) {
+      const idle = await hydrateIdleUser(getIdleGroup());
+      set({ active: idle, hasActiveSession: false, isBootstrapped: true });
+      return;
+    }
+
+    const group = await getSession(sessionId);
+
+    if (!group) {
+      await clearActiveSessionId();
+      const idle = await hydrateIdleUser(getIdleGroup());
+      set({ active: idle, hasActiveSession: false, isBootstrapped: true });
+      return;
+    }
+
+    set({ active: group, hasActiveSession: true, isBootstrapped: true });
+  },
+
+  endSession: async () => {
+    const { active, hasActiveSession } = get();
+    if (!hasActiveSession || !isRealSessionId(active.id)) return;
+
+    await endSessionOnServer(active.id);
+    await clearActiveSessionId();
+
+    const idle = await hydrateIdleUser(getIdleGroup());
+    set({ active: idle, hasActiveSession: false });
+  },
+
+  handleRemoteSessionEnded: async () => {
+    const { hasActiveSession } = get();
+    if (!hasActiveSession) return;
+
+    await clearActiveSessionId();
+    await leaveSessionChannel();
+
+    const idle = await hydrateIdleUser(getIdleGroup());
+    set({ active: idle, hasActiveSession: false });
+  },
 }));
+
+onSessionEnded(() => {
+  void useGroupStore.getState().handleRemoteSessionEnded();
+});
 
 /** Selector helper — read just the member list. */
 export const selectMembers = (s: GroupStore) => s.active.members;
 /** Selector helper — read just the active group's id. */
 export const selectActiveGroupId = (s: GroupStore) => s.active.id;
+export const selectHasActiveSession = (s: GroupStore) => s.hasActiveSession;

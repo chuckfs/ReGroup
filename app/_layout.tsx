@@ -5,6 +5,7 @@ import * as SystemUI from 'expo-system-ui';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider } from '@/providers/AuthProvider';
 import { palette } from '@/constants';
 
 SystemUI.setBackgroundColorAsync(palette.voidPurple).catch(() => {});
@@ -28,7 +29,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <Stack
+        <AuthProvider>
+          <Stack
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: palette.voidPurple },
@@ -47,6 +49,7 @@ export default function RootLayout() {
             }}
           />
         </Stack>
+        </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
