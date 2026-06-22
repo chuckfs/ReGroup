@@ -10,4 +10,4 @@
 | [`../supabase/README.md`](../supabase/README.md) | DB migrations, RPCs, apply instructions |
 | [`ReGroup-Roadmap.md`](../ReGroup-Roadmap.md) | Build phases 0–7 |
 
-**Phase 0 complete.** **Phase 1 complete** — Supabase chosen; spike in `DevSpikes/regroup-realtime-spike`. **Phase 2 in progress** — schema in `supabase/`. Next: client auth + session service.
+**Phase 0–2 complete.** Next: **Phase 3** — join flow (second phone joins via invite code).

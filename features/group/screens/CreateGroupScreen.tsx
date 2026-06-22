@@ -1,8 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AtmosphericBackdrop } from '@/components/ui';
-import { markerHues, motion, palette, spacing } from '@/constants';
+import { markerHues, motion, palette, spacing, typography } from '@/constants';
 import type { DraftGroup, GroupVibeKey } from '@/types';
 
 import { GroupNameInput } from '../components/GroupNameInput';
@@ -25,7 +27,9 @@ import { VIBES_BY_KEY, generateInviteCode } from '../data/vibes';
 
 type Props = {
   onClose: () => void;
-  onComplete: (group: DraftGroup) => void;
+  onComplete: (group: DraftGroup) => void | Promise<void>;
+  isSubmitting?: boolean;
+  submitError?: string | null;
 };
 
 const STEP_COUNT = 3;
@@ -46,7 +50,12 @@ const STEP_COUNT = 3;
  * and the wizard always produces a single DraftGroup that's handed back
  * to the route via onComplete (the route persists into `useGroupStore`).
  */
-export default function CreateGroupScreen({ onClose, onComplete }: Props) {
+export default function CreateGroupScreen({
+  onClose,
+  onComplete,
+  isSubmitting = false,
+  submitError = null,
+}: Props) {
   const [stepIndex, setStepIndex] = useState(0);
   const [name, setName] = useState('');
   const [vibeKey, setVibeKey] = useState<GroupVibeKey>('nightlife');
@@ -81,15 +90,17 @@ export default function CreateGroupScreen({ onClose, onComplete }: Props) {
   );
 
   const handleNext = useCallback(() => {
+    if (isSubmitting) return;
+
     if (stepIndex === 0) {
       goTo(1, 'forward');
     } else if (stepIndex === 1) {
       setInviteCode(generateInviteCode(name || 'ReGroup'));
       goTo(2, 'forward');
     } else {
-      onComplete({ name: name.trim(), vibeKey, inviteCode });
+      void onComplete({ name: name.trim(), vibeKey, inviteCode });
     }
-  }, [goTo, inviteCode, name, onComplete, stepIndex, vibeKey]);
+  }, [goTo, inviteCode, isSubmitting, name, onComplete, stepIndex, vibeKey]);
 
   const handleBack = useCallback(() => {
     if (stepIndex === 0) {
@@ -109,12 +120,13 @@ export default function CreateGroupScreen({ onClose, onComplete }: Props) {
     return true;
   }, [name, stepIndex]);
 
-  const primaryLabel =
-    stepIndex === 0
+  const primaryLabel = isSubmitting
+    ? 'Creating…'
+    : stepIndex === 0
       ? 'Continue'
       : stepIndex === 1
-        ? 'Create group'
-        : 'Open group';
+        ? 'Continue'
+        : 'Start night';
 
   return (
     <View style={styles.root}>
@@ -150,14 +162,25 @@ export default function CreateGroupScreen({ onClose, onComplete }: Props) {
               groupName={name}
               vibeKey={vibeKey}
               inviteCode={inviteCode}
+              preview
             />
           )}
         </Animated.View>
 
+        {submitError ? (
+          <Text style={styles.error}>{submitError}</Text>
+        ) : null}
+
+        {isSubmitting ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={accent} />
+          </View>
+        ) : null}
+
         <WizardFooter
           primaryLabel={primaryLabel}
           onPrimary={handleNext}
-          primaryDisabled={!canAdvance}
+          primaryDisabled={!canAdvance || isSubmitting}
           accent={accent}
         />
       </KeyboardAvoidingView>
@@ -176,5 +199,16 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     paddingTop: spacing.md,
+  },
+  error: {
+    ...typography.bodySmall,
+    color: palette.danger,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  loadingRow: {
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
 });

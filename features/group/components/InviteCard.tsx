@@ -12,6 +12,8 @@ type Props = {
   groupName: string;
   vibeKey: GroupVibeKey;
   inviteCode: string;
+  /** Wizard preview — server assigns the real code on create. */
+  preview?: boolean;
 };
 
 /**
@@ -19,7 +21,12 @@ type Props = {
  * generated invite code in a tappable card, and a single Share CTA that
  * uses the system Share sheet (no extra deps).
  */
-export function InviteCard({ groupName, vibeKey, inviteCode }: Props) {
+export function InviteCard({
+  groupName,
+  vibeKey,
+  inviteCode,
+  preview = false,
+}: Props) {
   const vibe = VIBES_BY_KEY[vibeKey];
   const accent = markerHues[vibe.accent];
 
@@ -39,7 +46,9 @@ export function InviteCard({ groupName, vibeKey, inviteCode }: Props) {
       <Text style={styles.eyebrow}>Step 3</Text>
       <Text style={styles.title}>Your group is ready</Text>
       <Text style={styles.subtitle}>
-        Send this to your crew. They join with the code or the link.
+        {preview
+          ? 'Preview only — your real invite code is assigned when you start the night.'
+          : 'Send this to your crew. They join with the code or the link.'}
       </Text>
 
       <View style={[styles.summary, { shadowColor: accent }]}>
@@ -57,7 +66,9 @@ export function InviteCard({ groupName, vibeKey, inviteCode }: Props) {
       </View>
 
       <GlassCard cornerRadius={radius.lg} style={styles.codeCard}>
-        <Text style={styles.codeLabel}>Invite code</Text>
+        <Text style={styles.codeLabel}>
+          {preview ? 'Preview code' : 'Invite code'}
+        </Text>
         <Text style={styles.code} selectable>
           {inviteCode}
         </Text>
@@ -73,10 +84,14 @@ export function InviteCard({ groupName, vibeKey, inviteCode }: Props) {
       </GlassCard>
 
       <PressableScale
-        onPress={handleShare}
+        onPress={preview ? undefined : handleShare}
         accessibilityRole="button"
-        accessibilityLabel="Share invite"
-        style={[styles.shareBtn, { shadowColor: accent }]}
+        accessibilityLabel={preview ? 'Share available after create' : 'Share invite'}
+        style={[
+          styles.shareBtn,
+          { shadowColor: accent },
+          preview && styles.shareBtnDisabled,
+        ]}
       >
         <LinearGradient
           colors={[accent, palette.electric]}
@@ -187,6 +202,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.55,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 4 },
+  },
+  shareBtnDisabled: {
+    opacity: 0.45,
   },
   shareFill: {
     paddingVertical: 14,

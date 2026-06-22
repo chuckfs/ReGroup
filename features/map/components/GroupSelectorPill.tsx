@@ -6,17 +6,17 @@ import { palette, radius, typography } from '@/constants';
 
 type Props = {
   groupName: string;
-  memberCount: number;
+  rosterLabel: string;
   onPress?: () => void;
 };
 
 /** The centred "Brooklyn Nights · 7 people" pill in the floating top bar. */
-export function GroupSelectorPill({ groupName, memberCount, onPress }: Props) {
+export function GroupSelectorPill({ groupName, rosterLabel, onPress }: Props) {
   return (
     <PressableScale
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${groupName}, ${memberCount} people. Tap to switch group.`}
+      accessibilityLabel={`${groupName}, ${rosterLabel}. Tap to switch group.`}
     >
       <GlassCard
         cornerRadius={radius.pill}
@@ -26,7 +26,7 @@ export function GroupSelectorPill({ groupName, memberCount, onPress }: Props) {
         <View style={styles.row}>
           <View>
             <Text style={styles.groupName}>{groupName}</Text>
-            <Text style={styles.subtitle}>{memberCount} people</Text>
+            <Text style={styles.subtitle}>{rosterLabel}</Text>
           </View>
           <IconGlyph
             name="arrow"

@@ -142,19 +142,13 @@ CREATE UNIQUE INDEX sessions_invite_code_active_idx
 
 ---
 
-### Stream 5 — UI wiring
+### Stream 5 — UI wiring ✅
 
-Minimal surface area; no new screens.
+**Delivered:** `end_night` → `endSession`; wizard loading/error states; invite preview in wizard; server invite in `GroupSheet`; `rosterLabel` from `group.vibe`; mock idle documented.
 
-| Location | Change |
-|----------|--------|
-| `app/(modals)/group/new.tsx` | `createGroup` async; loading + error on wizard complete |
-| `CreateGroupScreen` | Step 2 invite code = **preview** until server returns real code on complete; or show server code after create on home |
-| `features/map/screens/HomeScreen.tsx` | `end_night` → `useGroupStore.endSession()` instead of `console.log` |
-| `InviteCard` | Display server `inviteCode` from store (already wired; just needs real data) |
-| `mockData.ts` | `user.id` becomes real `auth.users.id` when session active |
+**Phase 2 complete.**
 
-**Host-only roster in Phase 2:** After create, `members` = `[host]`. Map may look quiet — that's correct until Phase 3. `friendSimulator` stays `__DEV__`-only and should not run when a real session is active (small guard in `useLiveFriends`).
+---
 
 ---
 

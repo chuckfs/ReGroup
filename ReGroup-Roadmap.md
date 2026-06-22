@@ -52,17 +52,18 @@
 
 ---
 
-## Phase 2 — Auth & session lifecycle  · **M** · *backbone begins*
+## Phase 2 — Auth & session lifecycle  · **M** · *backbone begins* · **✅ Complete**
 
 **Goal:** Real accounts (lightweight) and real sessions that exist server-side, can be created, and can truly end.
 
 **Tasks:**
-- Stand up the chosen backend. Implement the lightest auth that gives a stable identity across devices.
-- Data model: `users`, `sessions` (the "group"/"night"), `memberships`, `invite_codes`. Sessions carry `created_at` and an `ended` state.
-- Replace the retint hack in `store/useGroupStore.ts` `createGroup` with a real server mutation that returns the canonical session (server-assigned id, roster). Wire the `loadActiveGroup(sessionId)` thunk the comments already describe.
-- Implement **End Session** for real: `services` call marks the session ended and triggers teardown. This is the privacy promise made into a system property — wire it to the existing `end_night` quick action (currently a `console.log` in `HomeScreen`).
+- [x] Supabase schema: `users`, `sessions`, `memberships`, RPCs, RLS (`supabase/`)
+- [x] Anonymous auth + profile boot (`authService`, `AuthProvider`)
+- [x] `sessionService` — create / get / end + `session_ended` broadcast
+- [x] `useGroupStore` — server `createGroup`, boot restore, `endSession`
+- [x] UI: wizard → server session, `end_night` ends session, invite code on sheet
 
-**Exit criteria:** You can create a session on one device, it persists server-side, and ending it is enforced by the server (not just local UI).
+**Exit criteria:** Create a session on one device, it persists server-side, ending is enforced by the server. **Met.**
 
 ---
 
@@ -141,7 +142,7 @@
 
 ## Where to start next
 
-**Phase 2** — auth & session lifecycle. Phases 0–1 are complete. Stand up Supabase in the production app: `users`, `sessions`, `memberships`, server-enforced `endSession`. Don't touch Phases 4–5 until two phones can see each other (Phase 3).
+**Phase 3** — join flow (first multiplayer milestone). Phases 0–2 are complete. Wire `regroup://join/{code}` so a second phone can join a server session.
 
 ---
 
@@ -151,7 +152,7 @@
 |---|---|---|---|
 | 0 | Cleanup + contract | S | no | **✅ done** |
 | 1 | Backend spike | S | no | **✅ done** |
-| 2 | Auth + session lifecycle | M | partial |
+| 2 | Auth + session lifecycle | M | partial | **✅ done** |
 | 3 | Join flow | M | **yes — first milestone** |
 | 4 | Live location sharing | L | yes |
 | 5 | ReGroup Action | L | yes |

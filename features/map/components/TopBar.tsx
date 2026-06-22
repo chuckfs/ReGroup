@@ -9,7 +9,8 @@ import { GroupSelectorPill } from './GroupSelectorPill';
 
 type Props = {
   groupName: string;
-  memberCount: number;
+  /** e.g. "7 people" or "1 person" from the active group. */
+  rosterLabel: string;
   onMenu?: () => void;
   onChat?: () => void;
   onSwitchGroup?: () => void;
@@ -22,7 +23,7 @@ type Props = {
  */
 export function TopBar({
   groupName,
-  memberCount,
+  rosterLabel,
   onMenu,
   onChat,
   onSwitchGroup,
@@ -40,7 +41,7 @@ export function TopBar({
       />
       <GroupSelectorPill
         groupName={groupName}
-        memberCount={memberCount}
+        rosterLabel={rosterLabel}
         onPress={onSwitchGroup}
       />
       <IconButton

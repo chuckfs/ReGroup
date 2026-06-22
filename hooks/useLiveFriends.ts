@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useGroupStore } from '@/store/useGroupStore';
+import { awarenessDevSimulator } from '@/services/awarenessDevSimulator';
 import { friendSimulator } from '@/services/friendSimulator';
 import { mapProjection } from '@/services/mapProjection';
 import { computeFriendProximity } from '@/services/proximityEngine';
@@ -47,9 +48,10 @@ export function useLiveFriends(
     Record<string, DeviceLocation>
   >({});
   const hasUserFix = userLocation != null;
+  const hasActiveSession = useGroupStore((s) => s.hasActiveSession);
 
   useEffect(() => {
-    if (!__DEV__ || !userLocation) return;
+    if (!__DEV__ || !userLocation || hasActiveSession) return;
 
     friendSimulator.seed(baseFriends, userLocation);
     friendSimulator.setUserLocation(userLocation);

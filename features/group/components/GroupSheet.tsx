@@ -176,6 +176,11 @@ export function GroupSheet({
               {summary.withGroup}/{summary.total} with group
               {summary.drifting > 0 ? ` · ${summary.drifting} drifting` : ''}
             </Text>
+            {group.inviteCode ? (
+              <Text style={styles.inviteCode} selectable>
+                Invite {group.inviteCode}
+              </Text>
+            ) : null}
           </View>
           <View style={styles.headerRightPill}>
             <View style={styles.headerDot} />
@@ -271,6 +276,13 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: palette.dim,
     marginTop: 4,
+  },
+  inviteCode: {
+    ...typography.bodySmall,
+    color: palette.lilac,
+    marginTop: 6,
+    letterSpacing: 1.5,
+    fontWeight: '700',
   },
   headerRightPill: {
     flexDirection: 'row',

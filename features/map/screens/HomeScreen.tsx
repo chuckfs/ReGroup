@@ -47,6 +47,8 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
  */
 export default function HomeScreen() {
   const group = useGroupStore((s) => s.active);
+  const hasActiveSession = useGroupStore((s) => s.hasActiveSession);
+  const endSession = useGroupStore((s) => s.endSession);
   const selectFriend = useFriendStore((s) => s.select);
   const setSheetSnap = useUIStore((s) => s.setSheetSnap);
 
@@ -72,12 +74,27 @@ export default function HomeScreen() {
     setDevRefreshKey((value) => value + 1);
   }, []);
 
-  const handleAction = useCallback((action: QuickAction) => {
-    // TODO(backend): post the user's quick-action status to the realtime
-    // channel so other group members see "Heading Home" / "End Night"
-    // immediately. For now we just log.
-    console.log('[ReGroup] quick action:', action);
-  }, []);
+  const handleAction = useCallback(
+    async (action: QuickAction) => {
+      if (action === 'end_night') {
+        if (!hasActiveSession) {
+          console.log('[ReGroup] end night — no active server session');
+          return;
+        }
+
+        try {
+          await endSession();
+        } catch (err) {
+          console.error('[ReGroup] end session failed:', err);
+        }
+        return;
+      }
+
+      // TODO(phase 5+): post declared status to realtime channel
+      console.log('[ReGroup] quick action:', action);
+    },
+    [endSession, hasActiveSession],
+  );
 
   const handleFriendPress = useCallback(
     (friend: Friend) => {
@@ -118,7 +135,9 @@ export default function HomeScreen() {
 
       <TopBar
         groupName={group.name}
-        memberCount={group.members.length + 1}
+        rosterLabel={
+          group.vibe || `${group.members.length + 1} people`
+        }
         onMenu={() => console.log('[ReGroup] menu')}
         onChat={() => console.log('[ReGroup] chat')}
         onSwitchGroup={() => router.push('/group/new' as never)}

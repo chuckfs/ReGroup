@@ -6,9 +6,8 @@ import { effectiveProximity, type DisplayStatus } from '@/types/status';
  * app reads from this module today; when the backend lands the strategy
  * is:
  *
- *   - Replace `mockGroup` with a hook (`useActiveGroup()`) that reads
- *     from the group store, which itself subscribes to the realtime
- *     channel.
+ * `mockGroup` is the dev idle fallback when no server session is active.
+ * Active sessions use `useGroupStore` with real `user.id` from auth.
  *   - Keep `STATUS_COPY`, `summarizeGroup`, `formatTimeAgo`,
  *     `formatDistance` as pure utilities — they don't change shape.
  *
