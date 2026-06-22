@@ -12,7 +12,7 @@ import type {
  * friend feature module can import a tight, self-contained surface.
  *
  * When the backend lands, these are the shapes the realtime layer
- * (Supabase / WebSocket) must produce per friend update.
+ * must produce per friend update. See `docs/backend-contract.md`.
  */
 
 export type StatusTone = 'positive' | 'neutral' | 'warning' | 'danger';

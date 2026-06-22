@@ -9,6 +9,7 @@ import type { DraftGroup, Group, GroupVibeKey } from '@/types';
  * canonical client cache for the user's groups.
  *
  * ─── Production swap ────────────────────────────────────────────────
+ * See `docs/backend-contract.md` for the full backend spec.
  * TODO(backend):
  *   - Replace the `setActive(mockGroup)` boot path with a
  *     `loadActiveGroup(groupId)` thunk that hits Supabase and

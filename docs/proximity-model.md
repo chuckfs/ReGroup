@@ -68,5 +68,5 @@ When live multiplayer + map scale land:
 ## Related docs
 
 - Product principles: `AGENTS.md`
-- Backend shapes (Phase 0 Stream 4): `docs/backend-contract.md` (when written)
+- Backend shapes (Phase 0): `docs/backend-contract.md`
 - Build sequence: `ReGroup-Roadmap.md` Phase 4
