@@ -7,6 +7,7 @@ import type { CurrentUser, Friend } from '@/types/friend';
 import type { Group, GroupVibeKey } from '@/types/group';
 
 const SESSION_ENDED_EVENT = 'session_ended';
+const ROSTER_UPDATED_EVENT = 'roster_updated';
 
 type SessionRow = {
   id: string;
@@ -37,11 +38,19 @@ export type SessionEndedPayload = {
   timestamp: number;
 };
 
+export type RosterUpdatedPayload = {
+  sessionId: string;
+  timestamp: number;
+};
+
 type SessionEndedHandler = (payload: SessionEndedPayload) => void;
+type RosterChangedHandler = (group: Group) => void;
 
 let controlChannel: RealtimeChannel | null = null;
 let controlSessionId: string | null = null;
+let presenceSessionId: string | null = null;
 let sessionEndedHandler: SessionEndedHandler | null = null;
+let rosterChangedHandler: RosterChangedHandler | null = null;
 
 export function sessionControlChannel(sessionId: string): string {
   return `session:${sessionId}:control`;
@@ -49,6 +58,10 @@ export function sessionControlChannel(sessionId: string): string {
 
 export function onSessionEnded(handler: SessionEndedHandler | null): void {
   sessionEndedHandler = handler;
+}
+
+export function onRosterChanged(handler: RosterChangedHandler | null): void {
+  rosterChangedHandler = handler;
 }
 
 function toMarkerHue(hue: string): MarkerHue {
@@ -108,6 +121,66 @@ function isSessionUnavailableError(message: string): boolean {
   );
 }
 
+async function refreshSession(sessionId: string): Promise<Group | null> {
+  await ensureSignedIn();
+
+  const { data, error } = await supabase.rpc('get_session', {
+    p_session_id: sessionId,
+  });
+
+  if (error) {
+    if (isSessionUnavailableError(error.message)) return null;
+    throw error;
+  }
+
+  if (!data) return null;
+
+  const userId = await getUserId();
+  return payloadToGroup(data as SessionPayload, userId);
+}
+
+async function handleRosterUpdated(payload: RosterUpdatedPayload): Promise<void> {
+  if (payload.sessionId !== controlSessionId) return;
+
+  try {
+    const group = await refreshSession(payload.sessionId);
+    if (!group) return;
+
+    if (__DEV__) {
+      console.log('[ReGroup] roster_updated:', group.members.length + 1, 'people');
+    }
+
+    rosterChangedHandler?.(group);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[ReGroup] roster refresh failed:', error);
+    }
+  }
+}
+
+async function broadcastRosterUpdated(sessionId: string): Promise<void> {
+  const channel =
+    controlChannel && controlSessionId === sessionId
+      ? controlChannel
+      : supabase.channel(sessionControlChannel(sessionId));
+
+  const ephemeral = channel !== controlChannel;
+
+  if (ephemeral) {
+    await subscribeChannel(channel);
+  }
+
+  await channel.send({
+    type: 'broadcast',
+    event: ROSTER_UPDATED_EVENT,
+    payload: { sessionId, timestamp: Date.now() } satisfies RosterUpdatedPayload,
+  });
+
+  if (ephemeral) {
+    await supabase.removeChannel(channel);
+  }
+}
+
 async function subscribeChannel(channel: RealtimeChannel): Promise<void> {
   return new Promise((resolve, reject) => {
     channel.subscribe((status) => {
@@ -119,7 +192,13 @@ async function subscribeChannel(channel: RealtimeChannel): Promise<void> {
   });
 }
 
+export async function leaveSessionPresence(): Promise<void> {
+  presenceSessionId = null;
+}
+
 export async function leaveSessionChannel(): Promise<void> {
+  await leaveSessionPresence();
+
   if (!controlChannel) return;
 
   await supabase.removeChannel(controlChannel);
@@ -128,8 +207,7 @@ export async function leaveSessionChannel(): Promise<void> {
 }
 
 /**
- * Subscribe to session control broadcasts (e.g. remote `session_ended`).
- * Stream 4 will call this after create/load.
+ * Subscribe to session control broadcasts (`session_ended`, `roster_updated`).
  */
 export async function attachSessionControl(sessionId: string): Promise<void> {
   if (controlChannel && controlSessionId === sessionId) return;
@@ -146,10 +224,23 @@ export async function attachSessionControl(sessionId: string): Promise<void> {
     sessionEndedHandler?.(ended);
   });
 
+  channel.on('broadcast', { event: ROSTER_UPDATED_EVENT }, ({ payload }) => {
+    void handleRosterUpdated(payload as RosterUpdatedPayload);
+  });
+
   await subscribeChannel(channel);
 
   controlChannel = channel;
   controlSessionId = sessionId;
+}
+
+/**
+ * Subscribe to roster sync on the session control channel (`roster_updated` broadcast).
+ * Pattern A from phase-3: refetch roster on broadcast rather than separate presence channel.
+ */
+export async function attachSessionPresence(sessionId: string): Promise<void> {
+  await attachSessionControl(sessionId);
+  presenceSessionId = sessionId;
 }
 
 export async function createSession(draft: {
@@ -173,7 +264,31 @@ export async function createSession(draft: {
     console.log('[ReGroup] session created:', group.id, group.inviteCode);
   }
 
-  await attachSessionControl(group.id);
+  await attachSessionPresence(group.id);
+
+  return group;
+}
+
+export async function joinSession(inviteCode: string): Promise<Group> {
+  await ensureSignedIn();
+  await ensureUserProfile();
+
+  const { data, error } = await supabase.rpc('join_session', {
+    p_invite_code: inviteCode,
+  });
+
+  if (error) throw error;
+  if (!data) throw new Error('join_session returned no data');
+
+  const userId = await getUserId();
+  const group = payloadToGroup(data as SessionPayload, userId);
+
+  if (__DEV__) {
+    console.log('[ReGroup] session joined:', group.id, group.inviteCode);
+  }
+
+  await attachSessionPresence(group.id);
+  await broadcastRosterUpdated(group.id);
 
   return group;
 }
@@ -195,7 +310,7 @@ export async function getSession(sessionId: string): Promise<Group | null> {
 
   const userId = await getUserId();
   const group = payloadToGroup(data as SessionPayload, userId);
-  await attachSessionControl(group.id);
+  await attachSessionPresence(group.id);
 
   return group;
 }

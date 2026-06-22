@@ -10,6 +10,7 @@
  * reads from and (in the wizard's `createGroup`) writes to that store.
  */
 export { default as CreateGroupScreen } from './screens/CreateGroupScreen';
+export { default as JoinSessionScreen } from './screens/JoinSessionScreen';
 export {
   GroupSheet,
   SNAP as GROUP_SHEET_SNAP,

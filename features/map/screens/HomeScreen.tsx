@@ -166,6 +166,9 @@ export default function HomeScreen() {
         onAction={handleAction}
         onSnapChange={handleSnap}
         onFriendPress={handleFriendPress}
+        onJoinWithCode={
+          hasActiveSession ? undefined : () => router.push('/join' as never)
+        }
       />
     </View>
   );

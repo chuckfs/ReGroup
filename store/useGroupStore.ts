@@ -7,7 +7,9 @@ import {
   createSession,
   endSession as endSessionOnServer,
   getSession,
+  joinSession as joinSessionOnServer,
   leaveSessionChannel,
+  onRosterChanged,
   onSessionEnded,
 } from '@/services/sessionService';
 import type { DraftGroup, Group, GroupVibeKey } from '@/types';
@@ -49,6 +51,8 @@ type GroupStore = {
   setActive: (group: Group) => void;
   setVibeKey: (key: GroupVibeKey) => void;
   createGroup: (draft: DraftGroup) => Promise<void>;
+  joinSession: (inviteCode: string) => Promise<void>;
+  applyGroupSnapshot: (group: Group) => void;
   restoreActiveSession: () => Promise<void>;
   endSession: () => Promise<void>;
   handleRemoteSessionEnded: () => Promise<void>;
@@ -78,6 +82,18 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
 
     await persistActiveSessionId(group.id);
     set({ active: group, hasActiveSession: true });
+  },
+
+  joinSession: async (inviteCode) => {
+    const group = await joinSessionOnServer(inviteCode);
+    await persistActiveSessionId(group.id);
+    set({ active: group, hasActiveSession: true });
+  },
+
+  applyGroupSnapshot: (group) => {
+    const { hasActiveSession, active } = get();
+    if (!hasActiveSession || active.id !== group.id) return;
+    set({ active: group });
   },
 
   restoreActiveSession: async () => {
@@ -126,6 +142,10 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
 
 onSessionEnded(() => {
   void useGroupStore.getState().handleRemoteSessionEnded();
+});
+
+onRosterChanged((group) => {
+  useGroupStore.getState().applyGroupSnapshot(group);
 });
 
 /** Selector helper — read just the member list. */

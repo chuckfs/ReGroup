@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheetHandle } from '@/components/sheet';
 import { FriendRow } from '@/components/friend';
+import { PressableScale } from '@/components/ui';
 import { motion, palette, radius, spacing, typography } from '@/constants';
 import { summarizeGroup } from '@/services/mockData';
 import type { Friend, Group, QuickAction } from '@/types';
@@ -54,6 +55,8 @@ type Props = {
   onAction?: (action: QuickAction) => void;
   onSnapChange?: (snap: SnapKey) => void;
   onFriendPress?: (friend: Friend) => void;
+  /** Idle home — tap to open manual join flow. */
+  onJoinWithCode?: () => void;
 };
 
 /**
@@ -73,6 +76,7 @@ export function GroupSheet({
   onAction,
   onSnapChange,
   onFriendPress,
+  onJoinWithCode,
 }: Props) {
   const insets = useSafeAreaInsets();
   const fullHeight = SNAP.full + insets.bottom;
@@ -220,6 +224,16 @@ export function GroupSheet({
            * user scrolls down to reach them.
            */}
           <View style={styles.divider} />
+          {onJoinWithCode ? (
+            <PressableScale
+              onPress={onJoinWithCode}
+              accessibilityRole="button"
+              accessibilityLabel="Join with invite code"
+              style={styles.joinPrompt}
+            >
+              <Text style={styles.joinPromptText}>Have a code? Join a night</Text>
+            </PressableScale>
+          ) : null}
           <View style={styles.actionsWrap}>
             <QuickActions onAction={onAction} />
           </View>
@@ -331,6 +345,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     height: StyleSheet.hairlineWidth,
     backgroundColor: palette.glassStroke,
+  },
+  joinPrompt: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  joinPromptText: {
+    ...typography.bodySmall,
+    color: palette.lilac,
+    fontWeight: '700',
   },
   /**
    * Chip strip — lives at the end of the scrollable content. We pull

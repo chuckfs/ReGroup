@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/providers/AuthProvider';
+import { DeepLinkHandler } from '@/components/DeepLinkHandler';
 import { palette } from '@/constants';
 
 SystemUI.setBackgroundColorAsync(palette.voidPurple).catch(() => {});
@@ -30,6 +31,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <AuthProvider>
+          <DeepLinkHandler />
           <Stack
           screenOptions={{
             headerShown: false,

@@ -56,6 +56,8 @@
 
 **Goal:** Real accounts (lightweight) and real sessions that exist server-side, can be created, and can truly end.
 
+**Implementation map:** [`docs/phase-2.md`](docs/phase-2.md)
+
 **Tasks:**
 - [x] Supabase schema: `users`, `sessions`, `memberships`, RPCs, RLS (`supabase/`)
 - [x] Anonymous auth + profile boot (`authService`, `AuthProvider`)
@@ -70,6 +72,8 @@
 ## Phase 3 — Join flow  · **M** · *first multiplayer milestone* 🎉
 
 **Goal:** A second person actually joins your session. This is the moment the app stops being single-player.
+
+**Implementation map:** [`docs/phase-3.md`](docs/phase-3.md)
 
 **Tasks:**
 - Add the deep-link handler for `regroup://join/{code}` (via `expo-linking`) plus a real `app/(modals)/join/[code].tsx` route and a join screen. Today `InviteCard` shares that link but **nothing handles it** — there is no join route. Close that loop.
@@ -142,7 +146,7 @@
 
 ## Where to start next
 
-**Phase 3** — join flow (first multiplayer milestone). Phases 0–2 are complete. Wire `regroup://join/{code}` so a second phone can join a server session.
+**Phase 3** — join flow (first multiplayer milestone). Phases 0–2 are complete. See [`docs/phase-3.md`](docs/phase-3.md).
 
 ---
 
