@@ -25,7 +25,7 @@ type GroupStore = {
   setActive: (group: Group) => void;
   /** Update only the vibe (cheap UI affordance — wizard restyle). */
   setVibeKey: (key: GroupVibeKey) => void;
-  /** Persist a new group built by the wizard. */
+  /** Persist a new group built by the wizard. Local-only until Phase 2 — does not hit the server. */
   createGroup: (draft: DraftGroup) => void;
 };
 
@@ -43,8 +43,8 @@ export const useGroupStore = create<GroupStore>((set) => ({
     set((s) => ({
       active: {
         ...s.active,
-        // Today this just retints the active group with the new draft.
-        // TODO(backend): replace with a server-created group object.
+        // Phase 2: replace with createSession mutation → server Group object.
+        // Today: retint mock roster with wizard name/vibe/code only.
         id: `grp_${Date.now().toString(36)}`,
         name: draft.name,
         vibeKey: draft.vibeKey,

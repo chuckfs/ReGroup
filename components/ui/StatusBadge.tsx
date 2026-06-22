@@ -32,7 +32,7 @@ type Props = {
 /**
  * Status presentation primitive — converts a `DisplayStatus` into the
  * canonical {colour, dot, label} chip used across the friend list, the
- * hero card, and the alerts feed.
+ * hero card, and friend detail.
  *
  * Keeps the tone-to-colour mapping in one place; new statuses only need
  * `STATUS_COPY` updated and they show up here automatically.

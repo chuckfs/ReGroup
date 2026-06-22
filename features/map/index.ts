@@ -10,14 +10,30 @@
  * `/components/map` so other features could render them on their own
  * surfaces (mini-maps, etc.) without depending on this module.
  *
- * Scaling guidance:
- *   - Real maps: replace `MapPaths` + `MapAtmosphere` with an actual
- *     map renderer (MapLibre/Mapbox). Keep `MapCanvas`'s stable API:
- *     `(width, height, friends, positions, userPosition, onFriendPress)`.
- *   - Per-friend live positions: pass `useLiveFriends` positions from
- *     `HomeScreen` (or the Supabase realtime equivalent in production).
- *   - Clustering: introduce a `MapClusterLayer` between `MapCanvas`
- *     and the per-friend `FloatingMapPin` in Phase 4.
+ * ## HomeScreen data flow
+ *
+ *   useUserMapPosition()  → user GPS + mapPosition
+ *   useLiveFriends()      → friend positions + statuses
+ *   useAwarenessLoop()    → proximity transition events
+ *
+ * ## MapCanvas API (stable — do not break without updating docs)
+ *
+ *   MapCanvas({
+ *     width,
+ *     height,
+ *     friends,
+ *     positions?,      // Record<friendId, MapPosition> from useLiveFriends
+ *     userPosition?,    // from useUserMapPosition — camera anchor
+ *     onFriendPress?,
+ *   })
+ *
+ * See `docs/backend-contract.md` § MapCanvas contract.
+ *
+ * ## Scaling (later phases)
+ *
+ *   - Real maps: replace `MapPaths` + `MapAtmosphere` with MapLibre/Mapbox
+ *   - Production friends: Supabase realtime replaces `friendSimulator`
+ *   - Clustering: `MapClusterLayer` in Phase 4
  */
 export { default as HomeScreen } from './screens/HomeScreen';
 export { MapCanvas } from './components/MapCanvas';

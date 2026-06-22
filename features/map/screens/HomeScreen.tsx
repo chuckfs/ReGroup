@@ -32,10 +32,11 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
  * The single core screen of ReGroup — the live group map.
  *
  * Layer stack (back → front):
- *   - MapCanvas   (full screen, atmospheric, glowing)
- *   - TopBar      (floating, safe-area aware)
- *   - LocateFab   (parks just above the sheet's current snap)
- *   - GroupSheet  (draggable; QuickActions live inside at the bottom band)
+ *   - MapCanvas        (full screen, atmospheric, glowing)
+ *   - TopBar           (floating, safe-area aware)
+ *   - AwarenessBanner  (soft ambient status transitions)
+ *   - LocateFab        (parks just above the sheet's current snap)
+ *   - GroupSheet       (draggable; QuickActions at the bottom band)
  *
  * The FAB fades out at the `full` snap — at that point there's nothing
  * left of the map to centre on.

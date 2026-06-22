@@ -8,8 +8,8 @@ import type {
 } from './status';
 
 /**
- * Friend-related types. Kept separate from group types so the
- * friend feature module can import a tight, self-contained surface.
+ * Friend-related types. Kept separate from group types for a tight import
+ * surface (`types/friend.ts` + `types/status.ts`).
  *
  * When the backend lands, these are the shapes the realtime layer
  * must produce per friend update. See `docs/backend-contract.md`.

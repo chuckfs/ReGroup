@@ -14,18 +14,18 @@
 
 ---
 
-## Phase 0 — Clear the decks & lock the contract  · **S** · *no backend*
+## Phase 0 — Clear the decks & lock the contract  · **S** · *no backend* · **✅ Complete**
 
 **Goal:** Remove the dead weight and pin down the data contracts so everything after this is additive, not corrective. Pure client work, zero risk, immediate clarity.
 
 **Tasks:**
-- Delete dead code: `services/mockLocationEngine.ts`, `hooks/useMockLocation.ts`, the entire unused alerts system (`types/alert.ts`, the `alerts`/`pushAlert`/`acknowledgeAlert`/`selectUnreadAlertCount` API in `store/useUIStore.ts`, and `features/alerts/`), the no-op placeholders in `services/mapProjection.ts` (`projectFriendRelativeToGroup`, `clusterPositions`, `setVenueContext`), and the `@deprecated computeFriendStatus` in `services/statusEngine.ts`.
-- Define **one unified status vocabulary** that will serve both the quick actions (I'm Good / Heading Home) and the future ReGroup response states (At Meeting Point / Heading / Can't Make It / No Response). Write it as the canonical `FriendStatus` + a coordination-state type. This prevents the parallel-systems mistake before it happens again.
-- Decide the proximity model explicitly: keep **user-relative** distance for now (what `proximityEngine` already does), and either wire `computeGroupCentroid` into the live path or mark it clearly as "Phase 4." No silent dead code.
-- Write a short **`docs/backend-contract.md`**: the exact shapes the backend must produce — `DeviceLocation`, a per-friend live update, session/group, membership, invite. These already exist as TS types; this doc makes them the spec.
-- Fix the stale "stable contract" note — `MapCanvas` actually takes `(width, height, friends, positions, userPosition, onFriendPress)`.
+- [x] Delete dead code: `mockLocationEngine`, `useMockLocation`, legacy alerts system, mapProjection stubs, deprecated `computeFriendStatus`
+- [x] Unified status vocabulary in `types/status.ts` (`ProximityStatus`, `DeclaredStatus`, `CoordinationStatus`, `DisplayStatus`, `mergeDisplayStatus`)
+- [x] Proximity model locked: user-relative v1 — `docs/proximity-model.md`; `computeGroupCentroid` deferred to Phase 4
+- [x] Backend contract: `docs/backend-contract.md`
+- [x] MapCanvas API documented in `features/map/index.ts` and backend contract
 
-**Exit criteria:** App still runs in the simulator, `expo lint` is clean, no unused modules remain, and `backend-contract.md` exists.
+**Exit criteria:** App still runs in the simulator, `expo lint` is clean, no unused modules remain, and `backend-contract.md` exists. **Met.**
 
 ---
 
@@ -139,9 +139,9 @@
 
 ---
 
-## Where to start this week
+## Where to start next
 
-Phase 0. It's small, it's all deletion and definition, it has zero dependencies, and it leaves the codebase honest before you build on it. Pair it with the Phase 1 spike if you've got the appetite — together they're the cheapest path to a confident "go." Don't touch Phases 4–5 until two phones can see each other (Phase 3); that's the line between a prototype and a product.
+**Phase 1** — backend decision spike. Phase 0 is complete (see checkmarks above). Run a 1–2 day Supabase realtime proof: two devices, one channel, live coordinate exchange. Don't touch Phases 4–5 until two phones can see each other (Phase 3).
 
 ---
 
@@ -149,7 +149,7 @@ Phase 0. It's small, it's all deletion and definition, it has zero dependencies,
 
 | Phase | Focus | Size | Multiplayer? |
 |---|---|---|---|
-| 0 | Cleanup + contract | S | no |
+| 0 | Cleanup + contract | S | no | **✅ done** |
 | 1 | Backend spike | S | no |
 | 2 | Auth + session lifecycle | M | partial |
 | 3 | Join flow | M | **yes — first milestone** |

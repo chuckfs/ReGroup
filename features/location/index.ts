@@ -1,15 +1,18 @@
 /**
  * Location feature module.
  *
- * Foreground device location flows through `locationService` and
- * `useLocation`. GPS fixes are projected onto the stylized map via
- * `mapProjection` and `useUserMapPosition`. Friend proximity is derived
- * in `proximityEngine` and surfaced through `useLiveFriends`.
+ * Pipeline:
+ *   locationService → useLocation → useUserMapPosition (user GPS + projection)
+ *   useLiveFriends → proximityEngine → mergeDisplayStatus (friends)
+ *
+ * Specs: `docs/backend-contract.md`, `docs/proximity-model.md`
  *
  * Privacy: only the most recent point is held in memory — no GPS history.
+ *
+ * Dev only: `friendSimulator` supplies fake friend GPS when `__DEV__`.
  */
 export { locationService } from '@/services/locationService';
-export { mapProjection } from '@/services/mapProjection';
+export { mapProjection, relativeToUser } from '@/services/mapProjection';
 export {
   calculateDistanceFeet,
   calculateDistanceMeters,
