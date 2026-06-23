@@ -88,6 +88,8 @@
 
 **Goal:** Real per-device GPS flowing to every member in real time, replacing the simulator.
 
+**Implementation map:** [`docs/phase-4.md`](docs/phase-4.md)
+
 **Tasks:**
 - In `services/locationService.ts`, broadcast each fix to the session channel keyed by `(sessionId, userId)` — the `TODO(realtime)` already marked in `startWatching`.
 - Point `hooks/useLiveFriends.ts` at real realtime positions instead of `friendSimulator`. Keep `friendSimulator` behind `__DEV__` so you can still test solo on one device.
@@ -146,7 +148,7 @@
 
 ## Where to start next
 
-**Phase 4** — live location sharing (pins move on the map). Phases 0–3 are complete.
+**Phase 4** — live location sharing (pins move on the map). Phases 0–3 are complete. See [`docs/phase-4.md`](docs/phase-4.md).
 
 ---
 

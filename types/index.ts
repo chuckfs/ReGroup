@@ -23,6 +23,7 @@ export {
 export type {
   DeviceLocation,
   GeoCoordinate,
+  LocationUpdate,
   MapPosition,
 } from './location';
 

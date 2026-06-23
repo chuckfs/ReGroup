@@ -34,11 +34,13 @@ class LocationServiceImpl {
     };
   }
 
+  /**
+   * Foreground GPS watch (~3 s / 5 m). Local subscribers include the map
+   * (`useLocation`) and session publish (`sessionLocationService`).
+   */
   async startWatching(): Promise<void> {
     if (this.subscription) return;
 
-    // TODO(realtime): broadcast each fix to the Supabase realtime channel
-    // keyed by (groupId, userId) so other members see the user's position.
     this.subscription = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.Balanced,

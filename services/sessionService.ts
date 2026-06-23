@@ -3,6 +3,11 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { markerHues, type MarkerHue } from '@/constants';
 import { supabase } from '@/lib/supabase';
 import { ensureSignedIn, ensureUserProfile, getUserId } from '@/services/authService';
+import {
+  attachSessionLocations,
+  deactivateSessionLocations,
+  leaveSessionLocations,
+} from '@/services/sessionLocationService';
 import type { CurrentUser, Friend } from '@/types/friend';
 import type { Group, GroupVibeKey } from '@/types/group';
 
@@ -198,6 +203,7 @@ export async function leaveSessionPresence(): Promise<void> {
 
 export async function leaveSessionChannel(): Promise<void> {
   await leaveSessionPresence();
+  await leaveSessionLocations();
 
   if (!controlChannel) return;
 
@@ -243,6 +249,11 @@ export async function attachSessionPresence(sessionId: string): Promise<void> {
   presenceSessionId = sessionId;
 }
 
+async function attachSessionRealtime(sessionId: string): Promise<void> {
+  await attachSessionPresence(sessionId);
+  await attachSessionLocations(sessionId);
+}
+
 export async function createSession(draft: {
   name: string;
   vibeKey: GroupVibeKey;
@@ -264,7 +275,7 @@ export async function createSession(draft: {
     console.log('[ReGroup] session created:', group.id, group.inviteCode);
   }
 
-  await attachSessionPresence(group.id);
+  await attachSessionRealtime(group.id);
 
   return group;
 }
@@ -287,7 +298,7 @@ export async function joinSession(inviteCode: string): Promise<Group> {
     console.log('[ReGroup] session joined:', group.id, group.inviteCode);
   }
 
-  await attachSessionPresence(group.id);
+  await attachSessionRealtime(group.id);
   await broadcastRosterUpdated(group.id);
 
   return group;
@@ -310,7 +321,7 @@ export async function getSession(sessionId: string): Promise<Group | null> {
 
   const userId = await getUserId();
   const group = payloadToGroup(data as SessionPayload, userId);
-  await attachSessionPresence(group.id);
+  await attachSessionRealtime(group.id);
 
   return group;
 }
@@ -318,6 +329,8 @@ export async function getSession(sessionId: string): Promise<Group | null> {
 export async function endSession(sessionId: string): Promise<void> {
   await ensureSignedIn();
   const userId = await getUserId();
+
+  deactivateSessionLocations();
 
   const channel =
     controlChannel && controlSessionId === sessionId

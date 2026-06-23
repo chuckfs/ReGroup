@@ -20,3 +20,11 @@ export interface GeoCoordinate {
   latitude: number;
   longitude: number;
 }
+
+/** Realtime location broadcast on `session:{sessionId}:locations`. */
+export interface LocationUpdate {
+  sessionId: string;
+  userId: string;
+  location: DeviceLocation;
+  batteryPercent?: number;
+}

@@ -14,7 +14,7 @@ import type { ProximityStatus } from '@/types/status';
  * `computeGroupCentroid` into this path until then.
  *
  * TODO(Phase 4): optional centroid anchor + adaptive venue thresholds.
- * TODO(realtime): Supabase friend positions replace dev simulator input.
+ * TODO(realtime): friend positions come from `useLiveFriends` + session locations channel.
  */
 export const PROXIMITY_ANCHOR = 'user' as const;
 

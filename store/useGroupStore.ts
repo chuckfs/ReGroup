@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { isRealSessionId, clearActiveSessionId, persistActiveSessionId, readActiveSessionId } from '@/lib/sessionStorage';
 import { getUserId } from '@/services/authService';
+import { mapProjection } from '@/services/mapProjection';
 import { mockGroup } from '@/services/mockData';
 import {
   createSession,
@@ -123,6 +124,7 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
 
     await endSessionOnServer(active.id);
     await clearActiveSessionId();
+    mapProjection.reset();
 
     const idle = await hydrateIdleUser(getIdleGroup());
     set({ active: idle, hasActiveSession: false });
@@ -134,6 +136,7 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
 
     await clearActiveSessionId();
     await leaveSessionChannel();
+    mapProjection.reset();
 
     const idle = await hydrateIdleUser(getIdleGroup());
     set({ active: idle, hasActiveSession: false });
