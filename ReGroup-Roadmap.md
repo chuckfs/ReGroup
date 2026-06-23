@@ -69,18 +69,18 @@
 
 ---
 
-## Phase 3 — Join flow  · **M** · *first multiplayer milestone* 🎉
+## Phase 3 — Join flow  · **M** · *first multiplayer milestone* · **✅ Complete**
 
 **Goal:** A second person actually joins your session. This is the moment the app stops being single-player.
 
 **Implementation map:** [`docs/phase-3.md`](docs/phase-3.md)
 
 **Tasks:**
-- Add the deep-link handler for `regroup://join/{code}` (via `expo-linking`) plus a real `app/(modals)/join/[code].tsx` route and a join screen. Today `InviteCard` shares that link but **nothing handles it** — there is no join route. Close that loop.
-- Invite-code validation → membership creation → roster sync.
-- Live roster: when Device B joins, it appears on Device A using the backend's presence/subscription.
+- [x] Deep-link handler + `app/(modals)/join/[code].tsx` + join screen
+- [x] `join_session` RPC + invite validation → membership
+- [x] Live roster sync via `roster_updated` on control channel
 
-**Exit criteria:** Device B taps the shared link or enters the code and appears in Device A's group roster, live. Celebrate this one.
+**Exit criteria:** Device B joins via link or code and appears in Device A's roster, live. **Met.**
 
 ---
 
@@ -146,7 +146,7 @@
 
 ## Where to start next
 
-**Phase 3** — join flow (first multiplayer milestone). Phases 0–2 are complete. See [`docs/phase-3.md`](docs/phase-3.md).
+**Phase 4** — live location sharing (pins move on the map). Phases 0–3 are complete.
 
 ---
 
@@ -157,7 +157,7 @@
 | 0 | Cleanup + contract | S | no | **✅ done** |
 | 1 | Backend spike | S | no | **✅ done** |
 | 2 | Auth + session lifecycle | M | partial | **✅ done** |
-| 3 | Join flow | M | **yes — first milestone** |
+| 3 | Join flow | M | **yes — first milestone** | **✅ done** |
 | 4 | Live location sharing | L | yes |
 | 5 | ReGroup Action | L | yes |
 | 6 | Reliability, power, background | L | yes |
