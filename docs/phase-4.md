@@ -50,10 +50,11 @@ On **two real phones** in the same active session:
 | `session:{id}:locations` channel | ✅ `sessionLocationService` |
 | `useLiveFriends` production path | ✅ |
 | `friendSimulator` | ✅ `__DEV__` only when `!hasActiveSession` |
-| `mapProjection` span | ❌ hardcoded `spanMeters: 1500` |
-| `expo-battery` | ❌ not a dependency |
-| Friend `batteryPercent` on wire | ❌ always `100` from RPC |
-| `awarenessEngine` with real fixes | ❌ `friendLocations` empty in session |
+| `mapProjection` span | ✅ adaptive `updateSpanForLocations` |
+| `expo-battery` | ✅ |
+| Friend `batteryPercent` on wire | ✅ in `LocationUpdate` |
+| `awarenessEngine` with real fixes | ✅ via `useAwarenessLoop` + teardown |
+| Session teardown order | ✅ `lib/sessionTeardown.ts` |
 | Phase 1 spike reference | ✅ `regroup-realtime-spike/App.tsx` — broadcast pattern proven |
 
 ---

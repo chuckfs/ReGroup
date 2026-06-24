@@ -224,6 +224,7 @@ export async function attachSessionControl(sessionId: string): Promise<void> {
 
   channel.on('broadcast', { event: SESSION_ENDED_EVENT }, ({ payload }) => {
     const ended = payload as SessionEndedPayload;
+    deactivateSessionLocations();
     if (__DEV__) {
       console.log('[ReGroup] session_ended received:', ended);
     }

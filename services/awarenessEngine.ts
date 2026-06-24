@@ -108,10 +108,7 @@ function snapshotState(input: FriendSnapshot): FriendAwarenessState {
  * Tracks proximity bands only — declared/coordination statuses do not
  * suppress proximity transition detection.
  *
- * TODO(realtime): feed snapshots from Supabase realtime friend positions
- * instead of the dev simulator.
- *
- * TODO(push): pipe emitted events to expo-notifications when backgrounded.
+ * Proximity, battery, and stale transitions from realtime friend fixes.
  */
 export class AwarenessEngineTracker {
   private previous = new Map<string, FriendAwarenessState>();

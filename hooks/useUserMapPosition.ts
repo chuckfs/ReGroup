@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 import { useLocation } from '@/hooks/useLocation';
 import { mapProjection } from '@/services/mapProjection';
@@ -20,11 +20,16 @@ type UseUserMapPositionResult = {
  */
 export function useUserMapPosition(): UseUserMapPositionResult {
   const { location, permission, error } = useLocation();
+  const spanMeters = useSyncExternalStore(
+    mapProjection.subscribeSpan,
+    mapProjection.getSpanMeters,
+    mapProjection.getSpanMeters,
+  );
 
   const mapPosition = useMemo(() => {
     if (!location) return DEFAULT_POSITION;
     return mapProjection.project(location);
-  }, [location]);
+  }, [location, spanMeters]);
 
   return { location, mapPosition, permission, error };
 }

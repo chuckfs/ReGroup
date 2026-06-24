@@ -11,6 +11,7 @@ import Animated, {
 import { palette, spacing } from '@/constants';
 import { useAwarenessLoop } from '@/hooks/useAwarenessLoop';
 import { useLiveFriends } from '@/hooks/useLiveFriends';
+import { useLocalBattery } from '@/hooks/useLocalBattery';
 import { useUserMapPosition } from '@/hooks/useUserMapPosition';
 import { useFriendStore } from '@/store/useFriendStore';
 import { useGroupStore } from '@/store/useGroupStore';
@@ -59,6 +60,7 @@ export default function HomeScreen() {
   const mapHeight = SCREEN_HEIGHT;
 
   const { location, mapPosition, error } = useUserMapPosition();
+  const localBatteryPercent = useLocalBattery(hasActiveSession);
   const {
     friends: liveFriends,
     positions,
@@ -66,9 +68,16 @@ export default function HomeScreen() {
     friendLocations,
   } = useLiveFriends(group.members, location, devRefreshKey);
 
-  useAwarenessLoop(liveFriends, friendLocations);
+  useAwarenessLoop(liveFriends, friendLocations, hasActiveSession);
 
-  const liveGroup = { ...group, members: liveFriends };
+  const liveGroup = {
+    ...group,
+    members: liveFriends,
+    user: {
+      ...group.user,
+      batteryPercent: localBatteryPercent ?? group.user.batteryPercent,
+    },
+  };
 
   const handleDevRefresh = useCallback(() => {
     setDevRefreshKey((value) => value + 1);

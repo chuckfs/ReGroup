@@ -101,4 +101,5 @@ const { data, error } = await supabase.rpc('join_session', {
 - `docs/backend-contract.md` — wire shapes
 - `docs/phase-2.md` — auth & session lifecycle (complete)
 - `docs/phase-3.md` — join flow (complete)
-- `docs/phase-4.md` — live location implementation map
+- `docs/phase-4.md` — live location (complete)
+- `docs/phase-5.md` — ReGroup Action implementation map

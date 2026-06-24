@@ -1,3 +1,4 @@
+import { calculateDistanceMeters } from '@/services/distance';
 import type {
   DeviceLocation,
   GeoCoordinate,
@@ -6,12 +7,16 @@ import type {
 
 const EARTH_RADIUS_METERS = 6_371_000;
 
+export const MAP_SPAN_LIMITS = {
+  MIN_METERS: 1_500,
+  MAX_METERS: 5_000,
+  PADDING_FACTOR: 1.4,
+} as const;
+
 /**
- * GPS → stylised map projection.
+ * GPS → stylised map projection with adaptive span for festival-scale crews.
  *
- * TODO(Phase 4): group-centroid-relative projection, adaptive span, and
- * auto-fit for festival-scale crews.
- * TODO(Phase 4): cluster nearby pins when groups grow large.
+ * TODO(Phase 4+): cluster nearby pins when groups grow large.
  * TODO(venue): bias origin or span using venue metadata.
  */
 export type MapProjectionConfig = {
@@ -23,13 +28,40 @@ export type MapProjectionConfig = {
 };
 
 const DEFAULT_CONFIG: MapProjectionConfig = {
-  spanMeters: 1_500,
+  spanMeters: MAP_SPAN_LIMITS.MIN_METERS,
 };
+
+type SpanListener = () => void;
 
 function clamp01(value: number): number {
   if (value < 0) return 0;
   if (value > 1) return 1;
   return value;
+}
+
+/**
+ * Fit map span to the farthest fix from the session origin.
+ * `spanMeters` is the full normalized width — use diameter × padding.
+ */
+export function computeAdaptiveSpanMeters(
+  origin: GeoCoordinate,
+  locations: GeoCoordinate[],
+): number {
+  if (locations.length === 0) return MAP_SPAN_LIMITS.MIN_METERS;
+
+  let maxMeters = 0;
+  for (const location of locations) {
+    maxMeters = Math.max(maxMeters, calculateDistanceMeters(origin, location));
+  }
+
+  const diameter = maxMeters * 2;
+  return Math.min(
+    MAP_SPAN_LIMITS.MAX_METERS,
+    Math.max(
+      MAP_SPAN_LIMITS.MIN_METERS,
+      diameter * MAP_SPAN_LIMITS.PADDING_FACTOR,
+    ),
+  );
 }
 
 /**
@@ -75,9 +107,56 @@ export function relativeToUser(
 class MapProjectionImpl {
   private origin: GeoCoordinate | null = null;
   private config: MapProjectionConfig;
+  private spanListeners = new Set<SpanListener>();
 
   constructor(config: MapProjectionConfig = DEFAULT_CONFIG) {
-    this.config = config;
+    this.config = { ...config };
+  }
+
+  getSpanMeters(): number {
+    return this.config.spanMeters;
+  }
+
+  setSpanMeters(spanMeters: number): void {
+    const next = Math.min(
+      MAP_SPAN_LIMITS.MAX_METERS,
+      Math.max(MAP_SPAN_LIMITS.MIN_METERS, spanMeters),
+    );
+
+    if (this.config.spanMeters === next) return;
+
+    this.config.spanMeters = next;
+    this.spanListeners.forEach((listener) => listener());
+  }
+
+  subscribeSpan(listener: SpanListener): () => void {
+    this.spanListeners.add(listener);
+    return () => {
+      this.spanListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Auto-fit span from the user + crew GPS fixes relative to the map origin.
+   */
+  updateSpanForLocations(
+    userLocation: DeviceLocation,
+    friendLocations: Record<string, DeviceLocation>,
+  ): void {
+    if (!this.origin) return;
+
+    const coordinates: GeoCoordinate[] = [
+      {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+      },
+      ...Object.values(friendLocations).map((location) => ({
+        latitude: location.latitude,
+        longitude: location.longitude,
+      })),
+    ];
+
+    this.setSpanMeters(computeAdaptiveSpanMeters(this.origin, coordinates));
   }
 
   /**
@@ -123,6 +202,7 @@ class MapProjectionImpl {
 
   reset(): void {
     this.origin = null;
+    this.setSpanMeters(DEFAULT_CONFIG.spanMeters);
   }
 }
 

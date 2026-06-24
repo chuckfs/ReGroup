@@ -29,6 +29,10 @@ type UseLiveFriendsResult = {
   friendLocations: Record<string, DeviceLocation>;
 };
 
+type FriendLiveMeta = {
+  batteryPercent?: number;
+};
+
 function staticFriendsResult(baseFriends: Friend[]): UseLiveFriendsResult {
   return {
     friends: baseFriends,
@@ -50,8 +54,11 @@ function buildLiveFriendsFromLocations(
   baseFriends: Friend[],
   userLocation: DeviceLocation,
   friendLocations: Record<string, DeviceLocation>,
+  friendLiveMeta: Record<string, FriendLiveMeta>,
   simulateBattery: boolean,
 ): UseLiveFriendsResult {
+  mapProjection.updateSpanForLocations(userLocation, friendLocations);
+
   const proximityDetails: FriendProximityDetail[] = [];
   const positions: Record<string, MapPosition> = {};
 
@@ -72,7 +79,7 @@ function buildLiveFriendsFromLocations(
     );
     const batteryPercent = simulateBattery
       ? awarenessDevSimulator.getBatteryPercent(friend.id, friend.batteryPercent)
-      : friend.batteryPercent;
+      : (friendLiveMeta[friend.id]?.batteryPercent ?? friend.batteryPercent);
 
     positions[friend.id] = projected;
     proximityDetails.push({
@@ -120,6 +127,9 @@ export function useLiveFriends(
   const [friendLocations, setFriendLocations] = useState<
     Record<string, DeviceLocation>
   >({});
+  const [friendLiveMeta, setFriendLiveMeta] = useState<
+    Record<string, FriendLiveMeta>
+  >({});
   const hasUserFix = userLocation != null;
   const hasActiveSession = useGroupStore((s) => s.hasActiveSession);
 
@@ -131,11 +141,19 @@ export function useLiveFriends(
         ...prev,
         [update.userId]: update.location,
       }));
+
+      if (update.batteryPercent != null) {
+        setFriendLiveMeta((prev) => ({
+          ...prev,
+          [update.userId]: { batteryPercent: update.batteryPercent },
+        }));
+      }
     });
 
     return () => {
       onFriendLocation(null);
       setFriendLocations({});
+      setFriendLiveMeta({});
     };
   }, [hasActiveSession]);
 
@@ -147,6 +165,13 @@ export function useLiveFriends(
       const next: Record<string, DeviceLocation> = {};
       for (const [id, location] of Object.entries(prev)) {
         if (memberIds.has(id)) next[id] = location;
+      }
+      return next;
+    });
+    setFriendLiveMeta((prev) => {
+      const next: Record<string, FriendLiveMeta> = {};
+      for (const [id, meta] of Object.entries(prev)) {
+        if (memberIds.has(id)) next[id] = meta;
       }
       return next;
     });
@@ -188,6 +213,7 @@ export function useLiveFriends(
         baseFriends,
         userLocation,
         friendLocations,
+        friendLiveMeta,
         false,
       );
     }
@@ -202,7 +228,15 @@ export function useLiveFriends(
       baseFriends,
       userLocation,
       friendLocations,
+      friendLiveMeta,
       true,
     );
-  }, [baseFriends, userLocation, friendLocations, devRefreshKey, hasActiveSession]);
+  }, [
+    baseFriends,
+    userLocation,
+    friendLocations,
+    friendLiveMeta,
+    devRefreshKey,
+    hasActiveSession,
+  ]);
 }

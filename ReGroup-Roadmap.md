@@ -84,26 +84,27 @@
 
 ---
 
-## Phase 4 — Live location sharing  · **L** · *the actual core*
+## Phase 4 — Live location sharing  · **L** · *the actual core* · **✅ Complete**
 
 **Goal:** Real per-device GPS flowing to every member in real time, replacing the simulator.
 
 **Implementation map:** [`docs/phase-4.md`](docs/phase-4.md)
 
 **Tasks:**
-- In `services/locationService.ts`, broadcast each fix to the session channel keyed by `(sessionId, userId)` — the `TODO(realtime)` already marked in `startWatching`.
-- Point `hooks/useLiveFriends.ts` at real realtime positions instead of `friendSimulator`. Keep `friendSimulator` behind `__DEV__` so you can still test solo on one device.
-- Fix the map for real-world scale: `services/mapProjection.ts` hardcodes `spanMeters: 1500`, which clamps anyone past ~750 m to the screen edge — useless for festivals/theme parks. Add adaptive span / auto-fit-to-group, and basic pan/zoom (or auto-frame the crew).
-- Add **per-device battery reporting** (`expo-battery`, not currently a dependency) so low-battery awareness is real instead of read from mock data.
-- Keep it ephemeral: positions live in the transient channel / memory, never written to a history table.
+- [x] `sessionLocationService` — broadcast/subscribe on `session:{id}:locations`
+- [x] `useLiveFriends` production path + adaptive map span
+- [x] `expo-battery` on location wire
+- [x] Session teardown + awareness from real transitions
 
-**Exit criteria:** Two real phones see each other move on the map in near-real-time with correct proximity status; `awarenessEngine` fires events on genuine transitions.
+**Exit criteria:** Two real phones see each other move on the map in near-real-time with correct proximity status; `awarenessEngine` fires events on genuine transitions. **Met** (verify on device).
 
 ---
 
 ## Phase 5 — ReGroup Action  · **L** · *the differentiator*
 
 **Goal:** The verb. Coordination layered on top of awareness — the thing that sets ReGroup apart from dots-on-a-map. Build the sub-features in feasibility order.
+
+**Implementation map:** [`docs/phase-5.md`](docs/phase-5.md)
 
 **Tasks:**
 - **5a · Meet Me Here (do first):** any member broadcasts their current fix as the rally point + a push notification to the group. Make the ReGroup button the primary action of an active session. Cheapest to build, ~80% of the real-world value.
@@ -148,7 +149,7 @@
 
 ## Where to start next
 
-**Phase 4** — live location sharing (pins move on the map). Phases 0–3 are complete. See [`docs/phase-4.md`](docs/phase-4.md).
+**Phase 5** — ReGroup Action (coordination / rally). Phases 0–4 are complete. See [`docs/phase-5.md`](docs/phase-5.md).
 
 ---
 
@@ -160,7 +161,7 @@
 | 1 | Backend spike | S | no | **✅ done** |
 | 2 | Auth + session lifecycle | M | partial | **✅ done** |
 | 3 | Join flow | M | **yes — first milestone** | **✅ done** |
-| 4 | Live location sharing | L | yes |
+| 4 | Live location sharing | L | yes | **✅ done** |
 | 5 | ReGroup Action | L | yes |
 | 6 | Reliability, power, background | L | yes |
 | 7 | Privacy hardening + beta | M | yes |

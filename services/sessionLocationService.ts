@@ -2,6 +2,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
 import { getUserId } from '@/services/authService';
+import { getBatteryPercent } from '@/services/batteryService';
 import { locationService } from '@/services/locationService';
 import type { DeviceLocation, LocationUpdate } from '@/types/location';
 
@@ -34,11 +35,19 @@ function startPublishingLocations(): void {
   publishUnsubscribe = locationService.subscribe((fix) => {
     if (!locationsSharingActive || !locationsSessionId || !currentUserId) return;
 
-    void broadcastLocation({
-      sessionId: locationsSessionId,
-      userId: currentUserId,
-      location: ensureLocationTimestamp(fix),
-    }).catch((error) => {
+    const sessionId = locationsSessionId;
+    const userId = currentUserId;
+
+    void (async () => {
+      const batteryPercent = await getBatteryPercent();
+
+      await broadcastLocation({
+        sessionId,
+        userId,
+        location: ensureLocationTimestamp(fix),
+        batteryPercent,
+      });
+    })().catch((error) => {
       if (__DEV__) {
         console.warn('[ReGroup] location broadcast failed:', error);
       }
