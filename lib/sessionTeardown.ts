@@ -1,7 +1,10 @@
+import { deactivateSessionCoordination } from '@/services/coordinationService';
 import { resetBatteryCache } from '@/services/batteryService';
 import { mapProjection } from '@/services/mapProjection';
 import { awarenessEngine } from '@/services/awarenessEngine';
+import { deactivateSessionDeclared } from '@/services/sessionDeclaredService';
 import { deactivateSessionLocations } from '@/services/sessionLocationService';
+import { useCoordinationStore } from '@/store/useCoordinationStore';
 import { useUIStore } from '@/store/useUIStore';
 
 /**
@@ -13,6 +16,9 @@ import { useUIStore } from '@/store/useUIStore';
  */
 export function resetLiveSessionClientState(): void {
   deactivateSessionLocations();
+  deactivateSessionDeclared();
+  deactivateSessionCoordination();
+  useCoordinationStore.getState().clearRally();
   mapProjection.reset();
   awarenessEngine.reset();
   resetBatteryCache();

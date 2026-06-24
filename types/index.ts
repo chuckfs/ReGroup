@@ -7,8 +7,16 @@
 export type { CurrentUser, Friend, StatusTone } from './friend';
 
 export type {
+  CoordinationUpdate,
+  RallyCancelledPayload,
+  RallyPoint,
+  RallyStartedPayload,
+} from './coordination';
+
+export type {
   CoordinationStatus,
   DeclaredStatus,
+  DeclaredStatusUpdate,
   DisplayStatus,
   ProximityStatus,
 } from './status';

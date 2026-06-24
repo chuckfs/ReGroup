@@ -21,6 +21,14 @@ export type ProximityStatus =
 /** User-declared via quick actions on the bottom sheet. */
 export type DeclaredStatus = 'im_good' | 'heading_home' | 'home_safe';
 
+/** Realtime declared broadcast on `session:{sessionId}:declared`. */
+export type DeclaredStatusUpdate = {
+  sessionId: string;
+  userId: string;
+  declaredStatus: DeclaredStatus;
+  timestamp: number;
+};
+
 /** Response to a ReGroup rally point (Phase 5). */
 export type CoordinationStatus =
   | 'at_meeting_point'

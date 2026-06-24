@@ -50,10 +50,10 @@ On **two+ real phones** in an active session:
 | `bearingDegrees` + distance helpers | ✅ `services/geo.ts` |
 | Live GPS + session channels | ✅ Phase 4 |
 | `QuickActions` (`im_good`, `heading_home`, `end_night`) | ✅ UI only |
-| Declared status broadcast | ❌ `HomeScreen` → `console.log` |
-| Rally point model + channel | ❌ missing |
+| Declared status broadcast | ✅ `sessionDeclaredService` |
+| Rally point model + channel | ✅ `coordinationService` |
 | Coordination response broadcast | ❌ missing |
-| ReGroup / Meet Me Here CTA | ❌ `LocateFab` → `console.log` |
+| ReGroup / Meet Me Here CTA | ✅ FAB → `startRally` when session active |
 | Response UI on roster / sheet | ❌ missing |
 | Navigation arrow screen | ❌ missing |
 | `no_response` timeout logic | ❌ missing |
@@ -81,9 +81,9 @@ type ProximityStatus = 'with_group' | 'nearby' | 'drifting' | 'separated';
 | Source | Channel | Phase |
 |--------|---------|-------|
 | Proximity | computed client-side | 4 ✅ |
-| Declared | `session:{id}:declared` | 5 Stream 1 |
-| Coordination | `session:{id}:coordination` | 5 Stream 2–3 |
-| Rally point | `session:{id}:coordination` | 5 Stream 2 |
+| Declared | `session:{id}:declared` | 5 Stream 1 ✅ |
+| Coordination | `session:{id}:coordination` | 5 Stream 2 ✅ |
+| Rally point | `session:{id}:coordination` | 5 Stream 2 ✅ |
 
 ---
 

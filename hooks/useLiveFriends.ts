@@ -4,12 +4,15 @@ import { useGroupStore } from '@/store/useGroupStore';
 import { awarenessDevSimulator } from '@/services/awarenessDevSimulator';
 import { friendSimulator } from '@/services/friendSimulator';
 import { mapProjection } from '@/services/mapProjection';
+import { onFriendDeclared } from '@/services/sessionDeclaredService';
 import { onFriendLocation } from '@/services/sessionLocationService';
 import { computeFriendProximity } from '@/services/proximityEngine';
 import type { DeviceLocation, MapPosition } from '@/types/location';
 import type { Friend } from '@/types';
 import {
+  isProximityStatus,
   mergeDisplayStatus,
+  type DeclaredStatus,
   type DisplayStatus,
   type ProximityStatus,
 } from '@/types/status';
@@ -31,7 +34,44 @@ type UseLiveFriendsResult = {
 
 type FriendLiveMeta = {
   batteryPercent?: number;
+  declaredStatus?: DeclaredStatus;
 };
+
+function resolveProximityStatus(friend: Friend): ProximityStatus {
+  if (friend.proximityStatus) return friend.proximityStatus;
+  if (isProximityStatus(friend.status)) return friend.status;
+  return 'nearby';
+}
+
+function applyFriendLiveMeta(
+  friend: Friend,
+  meta: FriendLiveMeta | undefined,
+  overrides: {
+    proximityStatus: ProximityStatus;
+    position?: MapPosition;
+    batteryPercent?: number;
+    distanceFromUserMiles?: number;
+    lastSeenMinutesAgo?: number;
+  },
+): Friend {
+  const declaredStatus = meta?.declaredStatus ?? friend.declaredStatus;
+  const status = mergeDisplayStatus(
+    overrides.proximityStatus,
+    declaredStatus,
+    friend.coordinationStatus,
+  );
+
+  return {
+    ...friend,
+    declaredStatus,
+    status,
+    proximityStatus: overrides.proximityStatus,
+    position: overrides.position ?? friend.position,
+    batteryPercent: overrides.batteryPercent ?? friend.batteryPercent,
+    distanceFromUserMiles: overrides.distanceFromUserMiles ?? friend.distanceFromUserMiles,
+    lastSeenMinutesAgo: overrides.lastSeenMinutesAgo ?? friend.lastSeenMinutesAgo,
+  };
+}
 
 function staticFriendsResult(baseFriends: Friend[]): UseLiveFriendsResult {
   return {
@@ -63,8 +103,19 @@ function buildLiveFriendsFromLocations(
   const positions: Record<string, MapPosition> = {};
 
   const friends = baseFriends.map((friend) => {
+    const meta = friendLiveMeta[friend.id];
     const deviceLocation = friendLocations[friend.id];
-    if (!deviceLocation) return friend;
+
+    if (!deviceLocation) {
+      if (!meta?.declaredStatus && meta?.batteryPercent == null) return friend;
+
+      return applyFriendLiveMeta(friend, meta, {
+        proximityStatus: resolveProximityStatus(friend),
+        batteryPercent: simulateBattery
+          ? awarenessDevSimulator.getBatteryPercent(friend.id, friend.batteryPercent)
+          : meta?.batteryPercent ?? friend.batteryPercent,
+      });
+    }
 
     const projected =
       mapProjection.projectFromOrigin(deviceLocation) ?? friend.position;
@@ -72,33 +123,28 @@ function buildLiveFriendsFromLocations(
       userLocation,
       deviceLocation,
     );
-    const status = mergeDisplayStatus(
-      proximityStatus,
-      friend.declaredStatus,
-      friend.coordinationStatus,
-    );
     const batteryPercent = simulateBattery
       ? awarenessDevSimulator.getBatteryPercent(friend.id, friend.batteryPercent)
-      : (friendLiveMeta[friend.id]?.batteryPercent ?? friend.batteryPercent);
+      : meta?.batteryPercent ?? friend.batteryPercent;
+
+    const merged = applyFriendLiveMeta(friend, meta, {
+      proximityStatus,
+      position: projected,
+      batteryPercent,
+      distanceFromUserMiles: distanceFeet / 5280,
+      lastSeenMinutesAgo: minutesSinceFix(deviceLocation),
+    });
 
     positions[friend.id] = projected;
     proximityDetails.push({
       id: friend.id,
       name: friend.name,
       distanceFeet,
-      status,
+      status: merged.status,
       proximityStatus,
     });
 
-    return {
-      ...friend,
-      status,
-      proximityStatus,
-      position: projected,
-      batteryPercent,
-      distanceFromUserMiles: distanceFeet / 5280,
-      lastSeenMinutesAgo: minutesSinceFix(deviceLocation),
-    };
+    return merged;
   });
 
   return {
@@ -145,13 +191,27 @@ export function useLiveFriends(
       if (update.batteryPercent != null) {
         setFriendLiveMeta((prev) => ({
           ...prev,
-          [update.userId]: { batteryPercent: update.batteryPercent },
+          [update.userId]: {
+            ...prev[update.userId],
+            batteryPercent: update.batteryPercent,
+          },
         }));
       }
     });
 
+    onFriendDeclared((update) => {
+      setFriendLiveMeta((prev) => ({
+        ...prev,
+        [update.userId]: {
+          ...prev[update.userId],
+          declaredStatus: update.declaredStatus,
+        },
+      }));
+    });
+
     return () => {
       onFriendLocation(null);
+      onFriendDeclared(null);
       setFriendLocations({});
       setFriendLiveMeta({});
     };

@@ -8,6 +8,16 @@ import {
   deactivateSessionLocations,
   leaveSessionLocations,
 } from '@/services/sessionLocationService';
+import {
+  attachSessionCoordination,
+  deactivateSessionCoordination,
+  leaveSessionCoordination,
+} from '@/services/coordinationService';
+import {
+  attachSessionDeclared,
+  deactivateSessionDeclared,
+  leaveSessionDeclared,
+} from '@/services/sessionDeclaredService';
 import type { CurrentUser, Friend } from '@/types/friend';
 import type { Group, GroupVibeKey } from '@/types/group';
 
@@ -204,6 +214,8 @@ export async function leaveSessionPresence(): Promise<void> {
 export async function leaveSessionChannel(): Promise<void> {
   await leaveSessionPresence();
   await leaveSessionLocations();
+  await leaveSessionDeclared();
+  await leaveSessionCoordination();
 
   if (!controlChannel) return;
 
@@ -225,6 +237,8 @@ export async function attachSessionControl(sessionId: string): Promise<void> {
   channel.on('broadcast', { event: SESSION_ENDED_EVENT }, ({ payload }) => {
     const ended = payload as SessionEndedPayload;
     deactivateSessionLocations();
+    deactivateSessionDeclared();
+    deactivateSessionCoordination();
     if (__DEV__) {
       console.log('[ReGroup] session_ended received:', ended);
     }
@@ -253,6 +267,8 @@ export async function attachSessionPresence(sessionId: string): Promise<void> {
 async function attachSessionRealtime(sessionId: string): Promise<void> {
   await attachSessionPresence(sessionId);
   await attachSessionLocations(sessionId);
+  await attachSessionDeclared(sessionId);
+  await attachSessionCoordination(sessionId);
 }
 
 export async function createSession(draft: {
@@ -332,6 +348,8 @@ export async function endSession(sessionId: string): Promise<void> {
   const userId = await getUserId();
 
   deactivateSessionLocations();
+  deactivateSessionDeclared();
+  deactivateSessionCoordination();
 
   const channel =
     controlChannel && controlSessionId === sessionId

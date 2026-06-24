@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
@@ -10,13 +10,18 @@ import Animated, {
 
 import { palette, spacing } from '@/constants';
 import { useAwarenessLoop } from '@/hooks/useAwarenessLoop';
+import { useCoordinationSync } from '@/hooks/useCoordinationSync';
 import { useLiveFriends } from '@/hooks/useLiveFriends';
 import { useLocalBattery } from '@/hooks/useLocalBattery';
 import { useUserMapPosition } from '@/hooks/useUserMapPosition';
+import { startRally } from '@/services/coordinationService';
+import { broadcastDeclaredStatus } from '@/services/sessionDeclaredService';
+import { useCoordinationStore } from '@/store/useCoordinationStore';
 import { useFriendStore } from '@/store/useFriendStore';
 import { useGroupStore } from '@/store/useGroupStore';
 import { useUIStore } from '@/store/useUIStore';
 import type { Friend, QuickAction } from '@/types';
+import { quickActionToDeclaredStatus, type DeclaredStatus } from '@/types/status';
 
 import { GroupSheet, SNAP, type SnapKey } from '@/features/group/components/GroupSheet';
 import { AwarenessBanner, AwarenessDevPanel } from '@/features/awareness';
@@ -55,6 +60,17 @@ export default function HomeScreen() {
 
   const fabOpacity = useSharedValue(1);
   const [devRefreshKey, setDevRefreshKey] = useState(0);
+  const [selfDeclaredStatus, setSelfDeclaredStatus] = useState<
+    DeclaredStatus | undefined
+  >();
+  const hadActiveSession = useRef(hasActiveSession);
+
+  useEffect(() => {
+    if (hadActiveSession.current && !hasActiveSession) {
+      setSelfDeclaredStatus(undefined);
+    }
+    hadActiveSession.current = hasActiveSession;
+  }, [hasActiveSession]);
 
   const mapWidth = SCREEN_WIDTH;
   const mapHeight = SCREEN_HEIGHT;
@@ -69,6 +85,9 @@ export default function HomeScreen() {
   } = useLiveFriends(group.members, location, devRefreshKey);
 
   useAwarenessLoop(liveFriends, friendLocations, hasActiveSession);
+  useCoordinationSync(hasActiveSession);
+
+  const activeRally = useCoordinationStore((s) => s.activeRally);
 
   const liveGroup = {
     ...group,
@@ -76,12 +95,34 @@ export default function HomeScreen() {
     user: {
       ...group.user,
       batteryPercent: localBatteryPercent ?? group.user.batteryPercent,
+      declaredStatus: selfDeclaredStatus ?? group.user.declaredStatus,
+      status: selfDeclaredStatus ?? group.user.status,
     },
   };
 
   const handleDevRefresh = useCallback(() => {
     setDevRefreshKey((value) => value + 1);
   }, []);
+
+  const handleRegroup = useCallback(async () => {
+    if (!hasActiveSession || !location) return;
+
+    try {
+      await startRally(location, group.user.name, 'Meet me here');
+    } catch (err) {
+      console.error('[ReGroup] start rally failed:', err);
+    }
+  }, [group.user.name, hasActiveSession, location]);
+
+  useEffect(() => {
+    if (__DEV__ && activeRally) {
+      console.log(
+        '[ReGroup] active rally:',
+        activeRally.initiatorName,
+        activeRally.rallyId,
+      );
+    }
+  }, [activeRally]);
 
   const handleAction = useCallback(
     async (action: QuickAction) => {
@@ -93,14 +134,27 @@ export default function HomeScreen() {
 
         try {
           await endSession();
+          setSelfDeclaredStatus(undefined);
         } catch (err) {
           console.error('[ReGroup] end session failed:', err);
         }
         return;
       }
 
-      // TODO(phase 5+): post declared status to realtime channel
-      console.log('[ReGroup] quick action:', action);
+      const declaredStatus = quickActionToDeclaredStatus(action);
+      if (!declaredStatus) return;
+
+      if (!hasActiveSession) {
+        setSelfDeclaredStatus(declaredStatus);
+        return;
+      }
+
+      try {
+        await broadcastDeclaredStatus(declaredStatus);
+        setSelfDeclaredStatus(declaredStatus);
+      } catch (err) {
+        console.error('[ReGroup] declared status broadcast failed:', err);
+      }
     },
     [endSession, hasActiveSession],
   );
@@ -166,7 +220,13 @@ export default function HomeScreen() {
         pointerEvents={snap === 'full' ? 'none' : 'box-none'}
         style={[styles.fabSlot, { bottom: fabBottom }, fabStyle]}
       >
-        <LocateFab onPress={() => console.log('[ReGroup] locate me')} />
+        <LocateFab
+          onPress={
+            hasActiveSession
+              ? handleRegroup
+              : () => console.log('[ReGroup] locate me')
+          }
+        />
       </Animated.View>
 
       <GroupSheet
