@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import {
+  onCoordinationUpdate,
   onRallyCancelled,
   onRallyStarted,
 } from '@/services/coordinationService';
@@ -25,9 +26,14 @@ export function useCoordinationSync(hasActiveSession: boolean): void {
       }
     });
 
+    onCoordinationUpdate((update) => {
+      useCoordinationStore.getState().applyCoordinationUpdate(update);
+    });
+
     return () => {
       onRallyStarted(null);
       onRallyCancelled(null);
+      onCoordinationUpdate(null);
     };
   }, [hasActiveSession]);
 }

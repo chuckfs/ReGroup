@@ -4,17 +4,21 @@ import { supabase } from '@/lib/supabase';
 import { getUserId } from '@/services/authService';
 import { useCoordinationStore } from '@/store/useCoordinationStore';
 import type {
+  CoordinationUpdate,
   RallyCancelledPayload,
   RallyPoint,
   RallyStartedPayload,
 } from '@/types/coordination';
 import type { DeviceLocation } from '@/types/location';
+import type { CoordinationStatus } from '@/types/status';
 
 const RALLY_STARTED_EVENT = 'rally_started';
 const RALLY_CANCELLED_EVENT = 'rally_cancelled';
+const COORDINATION_UPDATE_EVENT = 'coordination_update';
 
 type RallyStartedHandler = (payload: RallyStartedPayload) => void;
 type RallyCancelledHandler = (payload: RallyCancelledPayload) => void;
+type CoordinationUpdateHandler = (update: CoordinationUpdate) => void;
 
 let coordinationChannel: RealtimeChannel | null = null;
 let coordinationSessionId: string | null = null;
@@ -22,6 +26,7 @@ let coordinationActive = false;
 let currentUserId: string | null = null;
 let rallyStartedHandler: RallyStartedHandler | null = null;
 let rallyCancelledHandler: RallyCancelledHandler | null = null;
+let coordinationUpdateHandler: CoordinationUpdateHandler | null = null;
 
 function newRallyId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -40,6 +45,12 @@ export function onRallyStarted(handler: RallyStartedHandler | null): void {
 
 export function onRallyCancelled(handler: RallyCancelledHandler | null): void {
   rallyCancelledHandler = handler;
+}
+
+export function onCoordinationUpdate(
+  handler: CoordinationUpdateHandler | null,
+): void {
+  coordinationUpdateHandler = handler;
 }
 
 /** Stop accepting sends/receives before session teardown broadcasts. */
@@ -184,6 +195,24 @@ export async function attachSessionCoordination(sessionId: string): Promise<void
     rallyCancelledHandler?.(update);
   });
 
+  channel.on('broadcast', { event: COORDINATION_UPDATE_EVENT }, ({ payload }) => {
+    if (!coordinationActive) return;
+
+    const update = payload as CoordinationUpdate;
+    if (update.sessionId !== coordinationSessionId) return;
+    if (currentUserId && update.userId === currentUserId) return;
+
+    if (__DEV__) {
+      console.log(
+        '[ReGroup] coordination_update received:',
+        update.userId,
+        update.status,
+      );
+    }
+
+    coordinationUpdateHandler?.(update);
+  });
+
   await subscribeChannel(channel);
 
   coordinationChannel = channel;
@@ -249,4 +278,62 @@ export async function startRally(
   useCoordinationStore.getState().setActiveRally(rally);
 
   return rally;
+}
+
+async function broadcastCoordinationUpdate(
+  update: CoordinationUpdate,
+): Promise<void> {
+  const channel =
+    coordinationChannel && coordinationSessionId === update.sessionId
+      ? coordinationChannel
+      : supabase.channel(sessionCoordinationChannel(update.sessionId));
+
+  const ephemeral = channel !== coordinationChannel;
+
+  if (ephemeral) {
+    await subscribeChannel(channel);
+  }
+
+  await channel.send({
+    type: 'broadcast',
+    event: COORDINATION_UPDATE_EVENT,
+    payload: update,
+  });
+
+  if (__DEV__) {
+    console.log(
+      '[ReGroup] coordination_update sent:',
+      update.userId,
+      update.status,
+    );
+  }
+
+  if (ephemeral) {
+    await supabase.removeChannel(channel);
+  }
+}
+
+export async function respondToRally(
+  rallyId: string,
+  status: Exclude<CoordinationStatus, 'no_response'>,
+): Promise<void> {
+  if (!coordinationActive || !coordinationSessionId || !currentUserId) {
+    throw new Error('No active session for rally response');
+  }
+
+  const activeRally = useCoordinationStore.getState().activeRally;
+  if (!activeRally || activeRally.rallyId !== rallyId) {
+    throw new Error('No active rally to respond to');
+  }
+
+  const update: CoordinationUpdate = {
+    sessionId: coordinationSessionId,
+    rallyId,
+    userId: currentUserId,
+    status,
+    timestamp: Date.now(),
+  };
+
+  await broadcastCoordinationUpdate(update);
+  useCoordinationStore.getState().applyCoordinationUpdate(update);
 }

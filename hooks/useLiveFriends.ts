@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useGroupStore } from '@/store/useGroupStore';
+import { useCoordinationStore } from '@/store/useCoordinationStore';
 import { awarenessDevSimulator } from '@/services/awarenessDevSimulator';
 import { friendSimulator } from '@/services/friendSimulator';
 import { mapProjection } from '@/services/mapProjection';
+import { resolveCoordinationStatus } from '@/lib/coordinationStatus';
 import { onFriendDeclared } from '@/services/sessionDeclaredService';
 import { onFriendLocation } from '@/services/sessionLocationService';
 import { computeFriendProximity } from '@/services/proximityEngine';
@@ -12,6 +14,7 @@ import type { Friend } from '@/types';
 import {
   isProximityStatus,
   mergeDisplayStatus,
+  type CoordinationStatus,
   type DeclaredStatus,
   type DisplayStatus,
   type ProximityStatus,
@@ -48,6 +51,7 @@ function applyFriendLiveMeta(
   meta: FriendLiveMeta | undefined,
   overrides: {
     proximityStatus: ProximityStatus;
+    coordinationStatus?: CoordinationStatus;
     position?: MapPosition;
     batteryPercent?: number;
     distanceFromUserMiles?: number;
@@ -55,15 +59,18 @@ function applyFriendLiveMeta(
   },
 ): Friend {
   const declaredStatus = meta?.declaredStatus ?? friend.declaredStatus;
+  const coordinationStatus =
+    overrides.coordinationStatus ?? friend.coordinationStatus;
   const status = mergeDisplayStatus(
     overrides.proximityStatus,
     declaredStatus,
-    friend.coordinationStatus,
+    coordinationStatus,
   );
 
   return {
     ...friend,
     declaredStatus,
+    coordinationStatus,
     status,
     proximityStatus: overrides.proximityStatus,
     position: overrides.position ?? friend.position,
@@ -96,6 +103,13 @@ function buildLiveFriendsFromLocations(
   friendLocations: Record<string, DeviceLocation>,
   friendLiveMeta: Record<string, FriendLiveMeta>,
   simulateBattery: boolean,
+  coordinationContext: {
+    activeRally: ReturnType<typeof useCoordinationStore.getState>['activeRally'];
+    responses: ReturnType<typeof useCoordinationStore.getState>['responses'];
+    responseDeadline: ReturnType<typeof useCoordinationStore.getState>['responseDeadline'];
+    currentUserId: string;
+    rosterUserIds: string[];
+  },
 ): UseLiveFriendsResult {
   mapProjection.updateSpanForLocations(userLocation, friendLocations);
 
@@ -105,12 +119,26 @@ function buildLiveFriendsFromLocations(
   const friends = baseFriends.map((friend) => {
     const meta = friendLiveMeta[friend.id];
     const deviceLocation = friendLocations[friend.id];
+    const coordinationStatus = resolveCoordinationStatus(friend.id, {
+      activeRally: coordinationContext.activeRally,
+      responses: coordinationContext.responses,
+      responseDeadline: coordinationContext.responseDeadline,
+      currentUserId: coordinationContext.currentUserId,
+      rosterUserIds: coordinationContext.rosterUserIds,
+    });
 
     if (!deviceLocation) {
-      if (!meta?.declaredStatus && meta?.batteryPercent == null) return friend;
+      if (
+        !meta?.declaredStatus &&
+        meta?.batteryPercent == null &&
+        !coordinationStatus
+      ) {
+        return friend;
+      }
 
       return applyFriendLiveMeta(friend, meta, {
         proximityStatus: resolveProximityStatus(friend),
+        coordinationStatus,
         batteryPercent: simulateBattery
           ? awarenessDevSimulator.getBatteryPercent(friend.id, friend.batteryPercent)
           : meta?.batteryPercent ?? friend.batteryPercent,
@@ -129,6 +157,7 @@ function buildLiveFriendsFromLocations(
 
     const merged = applyFriendLiveMeta(friend, meta, {
       proximityStatus,
+      coordinationStatus,
       position: projected,
       batteryPercent,
       distanceFromUserMiles: distanceFeet / 5280,
@@ -178,6 +207,21 @@ export function useLiveFriends(
   >({});
   const hasUserFix = userLocation != null;
   const hasActiveSession = useGroupStore((s) => s.hasActiveSession);
+  const currentUserId = useGroupStore((s) => s.active.user.id);
+  const activeRally = useCoordinationStore((s) => s.activeRally);
+  const responses = useCoordinationStore((s) => s.responses);
+  const responseDeadline = useCoordinationStore((s) => s.responseDeadline);
+
+  const coordinationContext = useMemo(
+    () => ({
+      activeRally,
+      responses,
+      responseDeadline,
+      currentUserId,
+      rosterUserIds: baseFriends.map((friend) => friend.id),
+    }),
+    [activeRally, baseFriends, currentUserId, responseDeadline, responses],
+  );
 
   useEffect(() => {
     if (!hasActiveSession) return;
@@ -275,6 +319,7 @@ export function useLiveFriends(
         friendLocations,
         friendLiveMeta,
         false,
+        coordinationContext,
       );
     }
 
@@ -290,6 +335,7 @@ export function useLiveFriends(
       friendLocations,
       friendLiveMeta,
       true,
+      coordinationContext,
     );
   }, [
     baseFriends,
@@ -298,5 +344,6 @@ export function useLiveFriends(
     friendLiveMeta,
     devRefreshKey,
     hasActiveSession,
+    coordinationContext,
   ]);
 }

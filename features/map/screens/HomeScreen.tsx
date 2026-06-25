@@ -13,18 +13,27 @@ import { useAwarenessLoop } from '@/hooks/useAwarenessLoop';
 import { useCoordinationSync } from '@/hooks/useCoordinationSync';
 import { useLiveFriends } from '@/hooks/useLiveFriends';
 import { useLocalBattery } from '@/hooks/useLocalBattery';
+import { useRallyResponseTimeout } from '@/hooks/useRallyResponseTimeout';
 import { useUserMapPosition } from '@/hooks/useUserMapPosition';
-import { startRally } from '@/services/coordinationService';
+import { resolveCoordinationStatus } from '@/lib/coordinationStatus';
+import { respondToRally, startRally } from '@/services/coordinationService';
 import { broadcastDeclaredStatus } from '@/services/sessionDeclaredService';
 import { useCoordinationStore } from '@/store/useCoordinationStore';
 import { useFriendStore } from '@/store/useFriendStore';
 import { useGroupStore } from '@/store/useGroupStore';
 import { useUIStore } from '@/store/useUIStore';
 import type { Friend, QuickAction } from '@/types';
-import { quickActionToDeclaredStatus, type DeclaredStatus } from '@/types/status';
+import {
+  isProximityStatus,
+  mergeDisplayStatus,
+  quickActionToDeclaredStatus,
+  type CoordinationStatus,
+  type DeclaredStatus,
+} from '@/types/status';
 
 import { GroupSheet, SNAP, type SnapKey } from '@/features/group/components/GroupSheet';
 import { AwarenessBanner, AwarenessDevPanel } from '@/features/awareness';
+import { RallyBanner, RallyResponseSheet } from '@/features/coordination';
 
 import { LocationDebugCard } from '../components/LocationDebugCard';
 import { ProximityDebugPanel } from '../components/ProximityDebugPanel';
@@ -63,6 +72,7 @@ export default function HomeScreen() {
   const [selfDeclaredStatus, setSelfDeclaredStatus] = useState<
     DeclaredStatus | undefined
   >();
+  const [rallySheetVisible, setRallySheetVisible] = useState(false);
   const hadActiveSession = useRef(hasActiveSession);
 
   useEffect(() => {
@@ -86,8 +96,24 @@ export default function HomeScreen() {
 
   useAwarenessLoop(liveFriends, friendLocations, hasActiveSession);
   useCoordinationSync(hasActiveSession);
+  useRallyResponseTimeout(hasActiveSession);
 
   const activeRally = useCoordinationStore((s) => s.activeRally);
+  const responses = useCoordinationStore((s) => s.responses);
+  const responseDeadline = useCoordinationStore((s) => s.responseDeadline);
+
+  const rosterUserIds = group.members.map((member) => member.id);
+  const selfCoordinationStatus = resolveCoordinationStatus(group.user.id, {
+    activeRally,
+    responses,
+    responseDeadline,
+    currentUserId: group.user.id,
+    rosterUserIds,
+  });
+  const userProximity = isProximityStatus(group.user.status)
+    ? group.user.status
+    : 'with_group';
+  const selfDeclared = selfDeclaredStatus ?? group.user.declaredStatus;
 
   const liveGroup = {
     ...group,
@@ -95,8 +121,13 @@ export default function HomeScreen() {
     user: {
       ...group.user,
       batteryPercent: localBatteryPercent ?? group.user.batteryPercent,
-      declaredStatus: selfDeclaredStatus ?? group.user.declaredStatus,
-      status: selfDeclaredStatus ?? group.user.status,
+      declaredStatus: selfDeclared,
+      coordinationStatus: selfCoordinationStatus,
+      status: mergeDisplayStatus(
+        userProximity,
+        selfDeclared,
+        selfCoordinationStatus,
+      ),
     },
   };
 
@@ -123,6 +154,20 @@ export default function HomeScreen() {
       );
     }
   }, [activeRally]);
+
+  const handleRallyRespond = useCallback(
+    async (status: Exclude<CoordinationStatus, 'no_response'>) => {
+      if (!activeRally) return;
+
+      try {
+        await respondToRally(activeRally.rallyId, status);
+        setRallySheetVisible(false);
+      } catch (err) {
+        console.error('[ReGroup] rally response failed:', err);
+      }
+    },
+    [activeRally],
+  );
 
   const handleAction = useCallback(
     async (action: QuickAction) => {
@@ -207,6 +252,24 @@ export default function HomeScreen() {
       />
 
       <AwarenessBanner />
+
+      {activeRally ? (
+        <RallyBanner
+          rally={activeRally}
+          userLocation={location}
+          currentUserId={group.user.id}
+          onRespond={() => setRallySheetVisible(true)}
+        />
+      ) : null}
+
+      {activeRally ? (
+        <RallyResponseSheet
+          visible={rallySheetVisible}
+          initiatorName={activeRally.initiatorName}
+          onClose={() => setRallySheetVisible(false)}
+          onRespond={handleRallyRespond}
+        />
+      ) : null}
 
       {__DEV__ ? (
         <>

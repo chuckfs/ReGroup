@@ -52,11 +52,11 @@ On **two+ real phones** in an active session:
 | `QuickActions` (`im_good`, `heading_home`, `end_night`) | ✅ UI only |
 | Declared status broadcast | ✅ `sessionDeclaredService` |
 | Rally point model + channel | ✅ `coordinationService` |
-| Coordination response broadcast | ❌ missing |
+| Coordination response broadcast | ✅ `respondToRally` |
 | ReGroup / Meet Me Here CTA | ✅ FAB → `startRally` when session active |
-| Response UI on roster / sheet | ❌ missing |
+| Response UI on roster / sheet | ✅ `RallyBanner` + `RallyResponseSheet` |
 | Navigation arrow screen | ❌ missing |
-| `no_response` timeout logic | ❌ missing |
+| `no_response` timeout logic | ✅ initiator `useRallyResponseTimeout` |
 | Custom map pin (5d) | ❌ blocked — decorative canvas only |
 | Last Together (5e) | ❌ deferred |
 
@@ -82,7 +82,7 @@ type ProximityStatus = 'with_group' | 'nearby' | 'drifting' | 'separated';
 |--------|---------|-------|
 | Proximity | computed client-side | 4 ✅ |
 | Declared | `session:{id}:declared` | 5 Stream 1 ✅ |
-| Coordination | `session:{id}:coordination` | 5 Stream 2 ✅ |
+| Coordination | `session:{id}:coordination` | 5 Stream 2–3 ✅ |
 | Rally point | `session:{id}:coordination` | 5 Stream 2 ✅ |
 
 ---
