@@ -14,6 +14,7 @@ type Props = {
   userLocation: DeviceLocation | null;
   currentUserId: string;
   onRespond: () => void;
+  onNavigate: () => void;
 };
 
 function formatRallyDistance(feet: number): string {
@@ -29,6 +30,7 @@ export function RallyBanner({
   userLocation,
   currentUserId,
   onRespond,
+  onNavigate,
 }: Props) {
   const insets = useSafeAreaInsets();
   const isInitiator = rally.initiatorUserId === currentUserId;
@@ -63,23 +65,43 @@ export function RallyBanner({
           </Text>
         </View>
         {!isInitiator ? (
-          <PressableScale
-            onPress={onRespond}
-            accessibilityRole="button"
-            accessibilityLabel="Respond to regroup"
-            style={styles.respondButton}
-          >
-            <Text style={styles.respondLabel}>Respond</Text>
-          </PressableScale>
+          <View style={styles.actions}>
+            <PressableScale
+              onPress={onNavigate}
+              accessibilityRole="button"
+              accessibilityLabel="Navigate to regroup point"
+              style={styles.navigateButton}
+            >
+              <Text style={styles.navigateLabel}>Navigate</Text>
+            </PressableScale>
+            <PressableScale
+              onPress={onRespond}
+              accessibilityRole="button"
+              accessibilityLabel="Respond to regroup"
+              style={styles.respondButton}
+            >
+              <Text style={styles.respondLabel}>Respond</Text>
+            </PressableScale>
+          </View>
         ) : (
-          <Pressable
-            onPress={onRespond}
-            accessibilityRole="button"
-            accessibilityLabel="View regroup responses"
-            style={styles.respondButtonMuted}
-          >
-            <Text style={styles.respondLabelMuted}>View</Text>
-          </Pressable>
+          <View style={styles.actions}>
+            <Pressable
+              onPress={onNavigate}
+              accessibilityRole="button"
+              accessibilityLabel="Open regroup navigation"
+              style={styles.respondButtonMuted}
+            >
+              <Text style={styles.respondLabelMuted}>Navigate</Text>
+            </Pressable>
+            <Pressable
+              onPress={onRespond}
+              accessibilityRole="button"
+              accessibilityLabel="View regroup responses"
+              style={styles.respondButtonMuted}
+            >
+              <Text style={styles.respondLabelMuted}>View</Text>
+            </Pressable>
+          </View>
         )}
       </GlassCard>
     </Animated.View>
@@ -125,6 +147,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: 'none',
     letterSpacing: 0.2,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  navigateButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(77, 230, 194, 0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(77, 230, 194, 0.45)',
+  },
+  navigateLabel: {
+    ...typography.caption,
+    color: palette.mint,
+    fontWeight: '800',
+    textTransform: 'none',
+    letterSpacing: 0.4,
   },
   respondButton: {
     paddingHorizontal: spacing.md,

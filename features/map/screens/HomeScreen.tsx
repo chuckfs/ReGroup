@@ -169,6 +169,10 @@ export default function HomeScreen() {
     [activeRally],
   );
 
+  const handleNavigateToRally = useCallback(() => {
+    router.push('/regroup/nav' as never);
+  }, []);
+
   const handleAction = useCallback(
     async (action: QuickAction) => {
       if (action === 'end_night') {
@@ -259,6 +263,7 @@ export default function HomeScreen() {
           userLocation={location}
           currentUserId={group.user.id}
           onRespond={() => setRallySheetVisible(true)}
+          onNavigate={handleNavigateToRally}
         />
       ) : null}
 

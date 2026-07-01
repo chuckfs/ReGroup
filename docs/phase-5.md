@@ -55,7 +55,7 @@ On **two+ real phones** in an active session:
 | Coordination response broadcast | ✅ `respondToRally` |
 | ReGroup / Meet Me Here CTA | ✅ FAB → `startRally` when session active |
 | Response UI on roster / sheet | ✅ `RallyBanner` + `RallyResponseSheet` |
-| Navigation arrow screen | ❌ missing |
+| Navigation arrow screen | ✅ `RegroupNavScreen` + `/regroup/nav` |
 | `no_response` timeout logic | ✅ initiator `useRallyResponseTimeout` |
 | Custom map pin (5d) | ❌ blocked — decorative canvas only |
 | Last Together (5e) | ❌ deferred |
